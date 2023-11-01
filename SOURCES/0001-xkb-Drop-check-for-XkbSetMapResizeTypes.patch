@@ -1,0 +1,118 @@
+From 36bcef5e5fd175e95ed4e0a014f6b1d8598b719d Mon Sep 17 00:00:00 2001
+From: Ray Strode <rstrode@redhat.com>
+Date: Mon, 4 Oct 2021 14:27:54 -0400
+Subject: [PATCH] xkb: Drop check for XkbSetMapResizeTypes
+
+Commit 446ff2d3177087b8173fa779fa5b77a2a128988b added checks to
+prevalidate the size of incoming SetMap requests.
+
+That commit checks for the XkbSetMapResizeTypes flag to be set before
+allowing key types data to be processed.
+
+key types data can be changed or even just sent wholesale unchanged
+without the number of key types changing, however. The check for
+XkbSetMapResizeTypes rejects those legitimate requests. In particular,
+XkbChangeMap never sets XkbSetMapResizeTypes and so always fails now
+any time XkbKeyTypesMask is in the changed mask.
+
+This commit drops the check for XkbSetMapResizeTypes in flags when
+prevalidating the request length.
+---
+ xkb/xkb.c | 26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
+
+diff --git a/xkb/xkb.c b/xkb/xkb.c
+index 183d6ffa1..62dee9cb6 100644
+--- a/xkb/xkb.c
++++ b/xkb/xkb.c
+@@ -2378,75 +2378,73 @@ SetVirtualModMap(XkbSrvInfoPtr xkbi,
+         }
+         changes->map.first_vmodmap_key = first;
+         changes->map.num_vmodmap_keys = (last - first) + 1;
+     }
+     return (char *) wire;
+ }
+ 
+ #define _add_check_len(new) \
+     if (len > UINT32_MAX - (new) || len > req_len - (new)) goto bad; \
+     else len += new
+ 
+ /**
+  * Check the length of the SetMap request
+  */
+ static int
+ _XkbSetMapCheckLength(xkbSetMapReq *req)
+ {
+     size_t len = sz_xkbSetMapReq, req_len = req->length << 2;
+     xkbKeyTypeWireDesc *keytype;
+     xkbSymMapWireDesc *symmap;
+     BOOL preserve;
+     int i, map_count, nSyms;
+ 
+     if (req_len < len)
+         goto bad;
+     /* types */
+     if (req->present & XkbKeyTypesMask) {
+         keytype = (xkbKeyTypeWireDesc *)(req + 1);
+         for (i = 0; i < req->nTypes; i++) {
+             _add_check_len(XkbPaddedSize(sz_xkbKeyTypeWireDesc));
+-            if (req->flags & XkbSetMapResizeTypes) {
+-                _add_check_len(keytype->nMapEntries
+-                               * sz_xkbKTSetMapEntryWireDesc);
+-                preserve = keytype->preserve;
+-                map_count = keytype->nMapEntries;
+-                if (preserve) {
+-                    _add_check_len(map_count * sz_xkbModsWireDesc);
+-                }
+-                keytype += 1;
+-                keytype = (xkbKeyTypeWireDesc *)
+-                          ((xkbKTSetMapEntryWireDesc *)keytype + map_count);
+-                if (preserve)
+-                    keytype = (xkbKeyTypeWireDesc *)
+-                              ((xkbModsWireDesc *)keytype + map_count);
++            _add_check_len(keytype->nMapEntries
++                           * sz_xkbKTSetMapEntryWireDesc);
++            preserve = keytype->preserve;
++            map_count = keytype->nMapEntries;
++            if (preserve) {
++                _add_check_len(map_count * sz_xkbModsWireDesc);
+             }
++            keytype += 1;
++            keytype = (xkbKeyTypeWireDesc *)
++                      ((xkbKTSetMapEntryWireDesc *)keytype + map_count);
++            if (preserve)
++                keytype = (xkbKeyTypeWireDesc *)
++                          ((xkbModsWireDesc *)keytype + map_count);
+         }
+     }
+     /* syms */
+     if (req->present & XkbKeySymsMask) {
+         symmap = (xkbSymMapWireDesc *)((char *)req + len);
+         for (i = 0; i < req->nKeySyms; i++) {
+             _add_check_len(sz_xkbSymMapWireDesc);
+             nSyms = symmap->nSyms;
+             _add_check_len(nSyms*sizeof(CARD32));
+             symmap += 1;
+             symmap = (xkbSymMapWireDesc *)((CARD32 *)symmap + nSyms);
+         }
+     }
+     /* actions */
+     if (req->present & XkbKeyActionsMask) {
+         _add_check_len(req->totalActs * sz_xkbActionWireDesc 
+                        + XkbPaddedSize(req->nKeyActs));
+     }
+     /* behaviours */
+     if (req->present & XkbKeyBehaviorsMask) {
+         _add_check_len(req->totalKeyBehaviors * sz_xkbBehaviorWireDesc);
+     }
+     /* vmods */
+     if (req->present & XkbVirtualModsMask) {
+         _add_check_len(XkbPaddedSize(Ones(req->virtualMods)));
+     }
+     /* explicit */
+     if (req->present & XkbExplicitComponentsMask) {
+         /* two bytes per non-zero explicit componen */
+         _add_check_len(XkbPaddedSize(req->totalKeyExplicit * sizeof(CARD16)));
+-- 
+2.32.0
+

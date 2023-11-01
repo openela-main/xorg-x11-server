@@ -1,0 +1,153 @@
+From c2eb1e2eac99ef0b8e6cf47ab0a94371cf47e939 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Tue, 23 Jul 2019 11:54:15 -0400
+Subject: [PATCH xserver 02/11] xfree86: Link fb statically
+
+There's no real benefit to leaving this loadable, virtually every driver
+is going to load it.
+
+Reviewed-by: Jon Turney <jon.turney@dronecode.org.uk>
+(cherry picked from commit c1703cdf3b0d6663fcac68598eefe324ae4e1e71)
+---
+ hw/xfree86/Makefile.am                     |  1 +
+ hw/xfree86/dixmods/Makefile.am             |  8 +-------
+ hw/xfree86/dixmods/meson.build             | 14 --------------
+ hw/xfree86/drivers/modesetting/meson.build |  1 -
+ hw/xfree86/loader/loadmod.c                |  1 +
+ hw/xfree86/meson.build                     |  1 +
+ hw/xfree86/sdksyms.sh                      |  6 +++---
+ test/Makefile.am                           |  1 +
+ 8 files changed, 8 insertions(+), 25 deletions(-)
+
+diff --git a/hw/xfree86/Makefile.am b/hw/xfree86/Makefile.am
+index 9aeaea1a6..1d494cd0f 100644
+--- a/hw/xfree86/Makefile.am
++++ b/hw/xfree86/Makefile.am
+@@ -75,6 +75,7 @@ LOCAL_LIBS = \
+             $(DRI2_LIB) \
+ 	    $(DRI3_LIB) \
+ 	    $(GLXVND_LIB) \
++	    $(top_builddir)/fb/libfb.la \
+ 	    $(top_builddir)/miext/sync/libsync.la \
+             $(top_builddir)/mi/libmi.la \
+             $(top_builddir)/os/libos.la \
+diff --git a/hw/xfree86/dixmods/Makefile.am b/hw/xfree86/dixmods/Makefile.am
+index 856659f98..a1f97056a 100644
+--- a/hw/xfree86/dixmods/Makefile.am
++++ b/hw/xfree86/dixmods/Makefile.am
+@@ -4,8 +4,7 @@ if GLX
+ GLXMODS = libglx.la
+ endif
+ 
+-module_LTLIBRARIES = libfb.la \
+-                     libwfb.la \
++module_LTLIBRARIES = libwfb.la \
+                      libshadow.la
+ 
+ extsmoduledir = $(moduledir)/extensions
+@@ -17,11 +16,6 @@ AM_CPPFLAGS = @XORG_INCS@ \
+            -I$(top_srcdir)/miext/shadow \
+            -I$(top_srcdir)/glx
+ 
+-libfb_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG)
+-libfb_la_LIBADD = $(top_builddir)/fb/libfb.la
+-libfb_la_SOURCES = fbmodule.c
+-libfb_la_CFLAGS = $(AM_CFLAGS)
+-
+ libwfb_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG)
+ libwfb_la_LIBADD = $(top_builddir)/fb/libwfb.la
+ libwfb_la_SOURCES = fbmodule.c
+diff --git a/hw/xfree86/dixmods/meson.build b/hw/xfree86/dixmods/meson.build
+index 0562b630f..e4ac02228 100644
+--- a/hw/xfree86/dixmods/meson.build
++++ b/hw/xfree86/dixmods/meson.build
+@@ -1,17 +1,3 @@
+-fb = shared_module(
+-    'fb',
+-    'fbmodule.c',
+-
+-    include_directories: [inc, xorg_inc],
+-    c_args: xorg_c_args,
+-    dependencies: common_dep,
+-    link_whole: libxserver_fb,
+-    link_with: e,
+-
+-    install: true,
+-    install_dir: module_dir,
+-)
+-
+ shared_module(
+     'wfb',
+     'fbmodule.c',
+diff --git a/hw/xfree86/drivers/modesetting/meson.build b/hw/xfree86/drivers/modesetting/meson.build
+index 5e13f1a53..02852a716 100644
+--- a/hw/xfree86/drivers/modesetting/meson.build
++++ b/hw/xfree86/drivers/modesetting/meson.build
+@@ -30,7 +30,6 @@ shared_module(
+ xorg_build_root = join_paths(meson.build_root(), 'hw', 'xfree86')
+ symbol_test_args = []
+ symbol_test_args += join_paths(xorg_build_root, 'libxorgserver.so')
+-symbol_test_args += join_paths(xorg_build_root, 'dixmods', 'libfb.so')
+ symbol_test_args += join_paths(xorg_build_root, 'dixmods', 'libshadow.so')
+ if gbm_dep.found()
+     symbol_test_args += join_paths(xorg_build_root, 'glamor_egl', 'libglamoregl.so')
+diff --git a/hw/xfree86/loader/loadmod.c b/hw/xfree86/loader/loadmod.c
+index a6356bd8f..f0983b2f8 100644
+--- a/hw/xfree86/loader/loadmod.c
++++ b/hw/xfree86/loader/loadmod.c
+@@ -621,6 +621,7 @@ DuplicateModule(ModuleDescPtr mod, ModuleDescPtr parent)
+ 
+ static const char *compiled_in_modules[] = {
+     "ddc",
++    "fb",
+     "i2c",
+     "ramdac",
+     "dbe",
+diff --git a/hw/xfree86/meson.build b/hw/xfree86/meson.build
+index cacf56d4c..c80964ea4 100644
+--- a/hw/xfree86/meson.build
++++ b/hw/xfree86/meson.build
+@@ -61,6 +61,7 @@ xorg_link = [
+     xorg_os_support,
+     xorg_parser,
+     xorg_ramdac,
++    libxserver_fb,
+     libxserver_xext_vidmode,
+     libxserver_main,
+     libxserver_config,
+diff --git a/hw/xfree86/sdksyms.sh b/hw/xfree86/sdksyms.sh
+index 7897aae22..2ebc4c019 100755
+--- a/hw/xfree86/sdksyms.sh
++++ b/hw/xfree86/sdksyms.sh
+@@ -21,13 +21,13 @@ cat > sdksyms.c << EOF
+ #include "picturestr.h"
+ 
+ 
+-/* fb/Makefile.am -- module */
+-/*
++/* fb/Makefile.am */
+ #include "fb.h"
+ #include "fbrop.h"
+ #include "fboverlay.h"
+-#include "wfbrename.h"
+ #include "fbpict.h"
++/* wfb is still a module
++#include "wfbrename.h"
+  */
+ 
+ 
+diff --git a/test/Makefile.am b/test/Makefile.am
+index 12ac327a3..ce07c3551 100644
+--- a/test/Makefile.am
++++ b/test/Makefile.am
+@@ -146,6 +146,7 @@ tests_LDADD += \
+             $(top_builddir)/hw/xfree86/i2c/libi2c.la \
+             $(top_builddir)/hw/xfree86/xkb/libxorgxkb.la \
+             $(top_builddir)/Xext/libXvidmode.la \
++            $(top_builddir)/fb/libfb.la \
+             $(XSERVER_LIBS) \
+             $(XORG_LIBS)
+ 
+-- 
+2.33.1
+
