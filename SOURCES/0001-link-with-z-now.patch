@@ -1,0 +1,214 @@
+From e84d6f25015d36202fd524b8b8d85d2324348ddb Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Mon, 19 Nov 2018 11:27:09 -0500
+Subject: [PATCH] link with -z now
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ hw/dmx/Makefile.am               | 2 +-
+ hw/kdrive/ephyr/Makefile.am      | 2 +-
+ hw/vfb/Makefile.am               | 2 +-
+ hw/xfree86/Makefile.am           | 3 ++-
+ hw/xfree86/dixmods/Makefile.am   | 6 +++---
+ hw/xfree86/exa/Makefile.am       | 2 +-
+ hw/xfree86/fbdevhw/Makefile.am   | 2 +-
+ hw/xfree86/int10/Makefile.am     | 2 +-
+ hw/xfree86/shadowfb/Makefile.am  | 2 +-
+ hw/xfree86/utils/cvt/Makefile.am | 1 +
+ hw/xfree86/utils/gtf/Makefile.am | 1 +
+ hw/xfree86/vgahw/Makefile.am     | 2 +-
+ hw/xnest/Makefile.am             | 2 +-
+ hw/xwayland/Makefile.am          | 2 +-
+ 14 files changed, 17 insertions(+), 14 deletions(-)
+
+diff --git a/hw/dmx/Makefile.am b/hw/dmx/Makefile.am
+index eef84cb..9ab20cc 100644
+--- a/hw/dmx/Makefile.am
++++ b/hw/dmx/Makefile.am
+@@ -78,7 +78,7 @@ XDMX_LIBS = \
+         input/libdmxinput.a \
+         config/libdmxconfig.a
+ 
+-Xdmx_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG)
++Xdmx_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG) -Wl,-z,now -pie
+ Xdmx_DEPENDENCIES= $(XDMX_LIBS)
+ Xdmx_LDADD = $(XDMX_LIBS) $(XDMX_SYS_LIBS) $(XSERVER_SYS_LIBS)
+ 
+diff --git a/hw/kdrive/ephyr/Makefile.am b/hw/kdrive/ephyr/Makefile.am
+index d12559b..cc37add 100644
+--- a/hw/kdrive/ephyr/Makefile.am
++++ b/hw/kdrive/ephyr/Makefile.am
+@@ -78,7 +78,7 @@ Xephyr_LDADD = 						\
+ 
+ Xephyr_DEPENDENCIES = @KDRIVE_LOCAL_LIBS@ $(XEPHYR_GLAMOR_LIB)
+ 
+-Xephyr_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG)
++Xephyr_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG) -W,-z,now -pie
+ 
+ relink:
+ 	$(AM_V_at)rm -f $(bin_PROGRAMS) && $(MAKE) $(bin_PROGRAMS)
+diff --git a/hw/vfb/Makefile.am b/hw/vfb/Makefile.am
+index 7033397..c09a9c9 100644
+--- a/hw/vfb/Makefile.am
++++ b/hw/vfb/Makefile.am
+@@ -20,7 +20,7 @@ XVFB_LIBS = \
+ 
+ Xvfb_LDADD = $(XVFB_LIBS) $(XVFB_SYS_LIBS) $(XSERVER_SYS_LIBS)
+ Xvfb_DEPENDENCIES = $(XVFB_LIBS)
+-Xvfb_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG)
++Xvfb_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG) -Wl,-z,now -pie
+ 
+ relink:
+ 	$(AM_V_at)rm -f Xvfb$(EXEEXT) && $(MAKE) Xvfb$(EXEEXT)
+diff --git a/hw/xfree86/Makefile.am b/hw/xfree86/Makefile.am
+index 32f98b5..5955148 100644
+--- a/hw/xfree86/Makefile.am
++++ b/hw/xfree86/Makefile.am
+@@ -78,12 +78,13 @@ Xorg_LDADD = \
+             $(XSERVER_SYS_LIBS)
+ Xorg_DEPENDENCIES = $(LOCAL_LIBS)
+ 
+-Xorg_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG)
++Xorg_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG) -Wl,-z,now -pie
+ 
+ if SUID_WRAPPER
+ wrapexecdir = $(SUID_WRAPPER_DIR)
+ wrapexec_PROGRAMS = Xorg.wrap
+ Xorg_wrap_SOURCES = xorg-wrapper.c
++Xorg_wrap_LDFLAGS = -Wl,-z,now -pie
+ endif
+ 
+ BUILT_SOURCES = xorg.conf.example
+diff --git a/hw/xfree86/dixmods/Makefile.am b/hw/xfree86/dixmods/Makefile.am
+index 856659f..6ab101b 100644
+--- a/hw/xfree86/dixmods/Makefile.am
++++ b/hw/xfree86/dixmods/Makefile.am
+@@ -17,17 +17,17 @@ AM_CPPFLAGS = @XORG_INCS@ \
+            -I$(top_srcdir)/miext/shadow \
+            -I$(top_srcdir)/glx
+ 
+-libfb_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG)
++libfb_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG) -Wl,-z,now
+ libfb_la_LIBADD = $(top_builddir)/fb/libfb.la
+ libfb_la_SOURCES = fbmodule.c
+ libfb_la_CFLAGS = $(AM_CFLAGS)
+ 
+-libwfb_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG)
++libwfb_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG) -Wl,-z,now
+ libwfb_la_LIBADD = $(top_builddir)/fb/libwfb.la
+ libwfb_la_SOURCES = fbmodule.c
+ libwfb_la_CFLAGS = $(AM_CFLAGS) -DFB_ACCESS_WRAPPER
+ 
+-libglx_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG)
++libglx_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG) -Wl,-z,now
+ libglx_la_LIBADD = $(top_builddir)/glx/libglx.la $(GLX_SYS_LIBS)
+ if DRI2
+ libglx_la_LIBADD += $(top_builddir)/glx/libglxdri.la
+diff --git a/hw/xfree86/exa/Makefile.am b/hw/xfree86/exa/Makefile.am
+index ccbb305..7bf7137 100644
+--- a/hw/xfree86/exa/Makefile.am
++++ b/hw/xfree86/exa/Makefile.am
+@@ -2,7 +2,7 @@ SUBDIRS = man
+ 
+ module_LTLIBRARIES = libexa.la
+ 
+-libexa_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG)
++libexa_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG) -Wl,-z,now
+ 
+ AM_CPPFLAGS = \
+ 	$(XORG_INCS) \
+diff --git a/hw/xfree86/fbdevhw/Makefile.am b/hw/xfree86/fbdevhw/Makefile.am
+index 37cd88c..895cfab 100644
+--- a/hw/xfree86/fbdevhw/Makefile.am
++++ b/hw/xfree86/fbdevhw/Makefile.am
+@@ -2,7 +2,7 @@ SUBDIRS = man
+ 
+ module_LTLIBRARIES = libfbdevhw.la
+ 
+-libfbdevhw_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG)
++libfbdevhw_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG) -Wl,-z,now
+ 
+ if FBDEVHW
+ libfbdevhw_la_SOURCES = fbdevhw.c
+diff --git a/hw/xfree86/int10/Makefile.am b/hw/xfree86/int10/Makefile.am
+index 66cb14d..aad47a1 100644
+--- a/hw/xfree86/int10/Makefile.am
++++ b/hw/xfree86/int10/Makefile.am
+@@ -4,7 +4,7 @@ sdk_HEADERS = xf86int10.h
+ 
+ EXTRA_CFLAGS =
+ 
+-libint10_la_LDFLAGS = -avoid-version
++libint10_la_LDFLAGS = -avoid-version -Wl,-z,now
+ libint10_la_LIBADD = $(PCIACCESS_LIBS)
+ 
+ COMMON_SOURCES = \
+diff --git a/hw/xfree86/shadowfb/Makefile.am b/hw/xfree86/shadowfb/Makefile.am
+index 67fb2e4..a8c2d59 100644
+--- a/hw/xfree86/shadowfb/Makefile.am
++++ b/hw/xfree86/shadowfb/Makefile.am
+@@ -1,5 +1,5 @@
+ module_LTLIBRARIES = libshadowfb.la
+-libshadowfb_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG)
++libshadowfb_la_LDFLAGS = -module -avoid-version $(LD_NO_UNDEFINED_FLAG) -Wl,-z,now
+ libshadowfb_la_SOURCES = sfbmodule.c shadowfb.c
+ libshadowfb_la_LIBADD = $(PIXMAN_LIBS)
+ 
+diff --git a/hw/xfree86/utils/cvt/Makefile.am b/hw/xfree86/utils/cvt/Makefile.am
+index 26abeb4..19b0eba 100644
+--- a/hw/xfree86/utils/cvt/Makefile.am
++++ b/hw/xfree86/utils/cvt/Makefile.am
+@@ -33,3 +33,4 @@ cvt_SOURCES = cvt.c \
+ 	$(top_srcdir)/os/xprintf.c
+ 
+ cvt_CFLAGS = $(DIX_CFLAGS) $(XORG_CFLAGS)
++cvt_LDFLAGS = -Wl,-z,now -pie
+diff --git a/hw/xfree86/utils/gtf/Makefile.am b/hw/xfree86/utils/gtf/Makefile.am
+index f77bf60..f520fb9 100644
+--- a/hw/xfree86/utils/gtf/Makefile.am
++++ b/hw/xfree86/utils/gtf/Makefile.am
+@@ -25,3 +25,4 @@ bin_PROGRAMS = gtf
+ gtf_SOURCES = gtf.c
+ gtf_CFLAGS = $(XORG_CFLAGS)
+ gtf_LDADD = -lm
++gtf_LDFLAGS = -Wl,-z,now -pie
+diff --git a/hw/xfree86/vgahw/Makefile.am b/hw/xfree86/vgahw/Makefile.am
+index b8196a6..37ac499 100644
+--- a/hw/xfree86/vgahw/Makefile.am
++++ b/hw/xfree86/vgahw/Makefile.am
+@@ -1,5 +1,5 @@
+ module_LTLIBRARIES = libvgahw.la
+-libvgahw_la_LDFLAGS = -avoid-version
++libvgahw_la_LDFLAGS = -avoid-version -Wl,-z,now
+ libvgahw_la_LIBADD = $(PCIACCESS_LIBS)
+ libvgahw_la_SOURCES = vgaHW.c vgaHWmodule.c
+ AM_CPPFLAGS = $(XORG_INCS) -I$(srcdir)/../ddc -I$(srcdir)/../i2c
+diff --git a/hw/xnest/Makefile.am b/hw/xnest/Makefile.am
+index c77da64..185803c 100644
+--- a/hw/xnest/Makefile.am
++++ b/hw/xnest/Makefile.am
+@@ -51,7 +51,7 @@ Xnest_SOURCES = $(SRCS)
+ 
+ Xnest_DEPENDENCIES = $(XNEST_LIBS)
+ Xnest_LDADD = $(XNEST_LIBS) $(XNEST_SYS_LIBS) $(XSERVER_SYS_LIBS)
+-Xnest_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG)
++Xnest_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG) -Wl,-z,now -pie
+ 
+ EXTRA_DIST = icon \
+              screensaver
+diff --git a/hw/xwayland/Makefile.am b/hw/xwayland/Makefile.am
+index bc1cb85..2f70cd1 100644
+--- a/hw/xwayland/Makefile.am
++++ b/hw/xwayland/Makefile.am
+@@ -28,7 +28,7 @@ Xwayland_LDADD =				\
+ 	$(XWAYLAND_SYS_LIBS)			\
+ 	$(top_builddir)/Xext/libXvidmode.la	\
+ 	$(XSERVER_SYS_LIBS)
+-Xwayland_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG)
++Xwayland_LDFLAGS = $(LD_EXPORT_SYMBOLS_FLAG) -Wl,-z,now -pie
+ 
+ Xwayland_built_sources =
+ 
+-- 
+2.19.1
+

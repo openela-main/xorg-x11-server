@@ -1,0 +1,167 @@
+From dafe5f6358edd557d89bb63265d6df2e1249f106 Mon Sep 17 00:00:00 2001
+From: Jocelyn Falempe <jfalempe@redhat.com>
+Date: Thu, 18 Nov 2021 14:45:42 +0100
+Subject: [PATCH] xf86/logind: fix call systemd_logind_vtenter after receiving
+ drm device resume
+
+logind send the resume event for input devices and drm device,
+in any order. if we call vt_enter before logind resume the drm device,
+it leads to a driver error, because logind has not done the
+DRM_IOCTL_SET_MASTER on it.
+
+Keep the old workaround to make sure we call systemd_logind_vtenter at
+least once if there are no platform device
+
+Signed-off-by: Jocelyn Falempe <jfalempe@redhat.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+
+xf86/logind: Fix drm_drop_master before vt_reldisp
+
+When switching to VT, the ioctl DRM_DROP_MASTER must be done before
+the ioctl VT_RELDISP. Otherwise the kernel can't change the modesetting
+reliably, and this leads to the console not showing up in some cases, like
+after unplugging a docking station with a DP or HDMI monitor.
+
+Before doing the VT_RELDISP, send a dbus message to logind, to
+pause the drm device, so logind will do the ioctl DRM_DROP_MASTER.
+
+With this patch, it changes the order logind will send the resume
+event, and drm will be sent last instead of first.
+so there is a also fix to call systemd_logind_vtenter() at the right time.
+
+Signed-off-by: Jocelyn Falempe <jfalempe@redhat.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+
+xf86/logind: Fix compilation error when built without logind/platform bus
+
+This was introduced by commit 8eb1396d
+
+Closes: https://gitlab.freedesktop.org/xorg/xserver/-/issues/1269
+Fixes: da9d012a9 - xf86/logind: Fix drm_drop_master before vt_reldisp
+
+Signed-off-by: Jocelyn Falempe <jfalempe@redhat.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+
+xf86/logind: fix missing call to vtenter if the platform device is not paused
+
+If there is one platform device, which is not paused nor resumed,
+systemd_logind_vtenter() will never get called.
+This break suspend/resume, and switching to VT on system with Nvidia
+proprietary driver.
+This is a regression introduced by f5bd039633fa83
+
+So now call systemd_logind_vtenter() if there are no paused
+platform devices.
+
+Closes: https://gitlab.freedesktop.org/xorg/xserver/-/issues/1271
+Fixes: f5bd0396 - xf86/logind: fix call systemd_logind_vtenter after receiving drm device resume
+
+Signed-off-by: Jocelyn Falempe <jfalempe@redhat.com>
+Tested-by: Olivier Fourdan <ofourdan@redhat.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+---
+ hw/xfree86/common/xf86Events.c               |  4 ++
+ hw/xfree86/os-support/linux/systemd-logind.c | 41 +++++++++++++++++---
+ include/systemd-logind.h                     |  2 +
+ 3 files changed, 42 insertions(+), 5 deletions(-)
+
+diff --git a/hw/xfree86/common/xf86Events.c b/hw/xfree86/common/xf86Events.c
+index 8a800bd8f..b683d233b 100644
+--- a/hw/xfree86/common/xf86Events.c
++++ b/hw/xfree86/common/xf86Events.c
+@@ -393,6 +393,10 @@ xf86VTLeave(void)
+     for (i = 0; i < xf86NumGPUScreens; i++)
+         xf86GPUScreens[i]->LeaveVT(xf86GPUScreens[i]);
+ 
++    if (systemd_logind_controls_session()) {
++        systemd_logind_drop_master();
++    }
++
+     if (!xf86VTSwitchAway())
+         goto switch_failed;
+ 
+diff --git a/hw/xfree86/os-support/linux/systemd-logind.c b/hw/xfree86/os-support/linux/systemd-logind.c
+index 13784d15c..bd7a341f0 100644
+--- a/hw/xfree86/os-support/linux/systemd-logind.c
++++ b/hw/xfree86/os-support/linux/systemd-logind.c
+@@ -302,6 +302,37 @@ cleanup:
+     dbus_error_free(&error);
+ }
+ 
++/*
++ * Send a message to logind, to pause the drm device
++ * and ensure the drm_drop_master is done before
++ * VT_RELDISP when switching VT
++ */
++void systemd_logind_drop_master(void)
++{
++    int i;
++    for (i = 0; i < xf86_num_platform_devices; i++) {
++        if (xf86_platform_devices[i].flags & XF86_PDEV_SERVER_FD) {
++            dbus_int32_t major, minor;
++            struct systemd_logind_info *info = &logind_info;
++
++            xf86_platform_devices[i].flags |= XF86_PDEV_PAUSED;
++            major = xf86_platform_odev_attributes(i)->major;
++            minor = xf86_platform_odev_attributes(i)->minor;
++            systemd_logind_ack_pause(info, minor, major);
++        }
++    }
++}
++
++static Bool are_platform_devices_resumed(void) {
++    int i;
++    for (i = 0; i < xf86_num_platform_devices; i++) {
++        if (xf86_platform_devices[i].flags & XF86_PDEV_PAUSED) {
++            return FALSE;
++        }
++    }
++    return TRUE;
++}
++
+ static DBusHandlerResult
+ message_filter(DBusConnection * connection, DBusMessage * message, void *data)
+ {
+@@ -417,14 +448,14 @@ message_filter(DBusConnection * connection, DBusMessage * message, void *data)
+         /* info->vt_active gets set by systemd_logind_vtenter() */
+         info->active = TRUE;
+ 
+-        if (pdev)
++        if (pdev) {
+             pdev->flags &= ~XF86_PDEV_PAUSED;
+-        else
++        } else
+             systemd_logind_set_input_fd_for_all_devs(major, minor, fd,
+                                                      info->vt_active);
+-
+-        /* Always call vtenter(), in case there are only legacy video devs */
+-        systemd_logind_vtenter();
++        /* Call vtenter if all platform devices are resumed, or if there are no platform device */
++        if (are_platform_devices_resumed())
++            systemd_logind_vtenter();
+     }
+     return DBUS_HANDLER_RESULT_HANDLED;
+ }
+diff --git a/include/systemd-logind.h b/include/systemd-logind.h
+index a4067d097..5c04d0130 100644
+--- a/include/systemd-logind.h
++++ b/include/systemd-logind.h
+@@ -33,6 +33,7 @@ int systemd_logind_take_fd(int major, int minor, const char *path, Bool *paus);
+ void systemd_logind_release_fd(int major, int minor, int fd);
+ int systemd_logind_controls_session(void);
+ void systemd_logind_vtenter(void);
++void systemd_logind_drop_master(void);
+ #else
+ #define systemd_logind_init()
+ #define systemd_logind_fini()
+@@ -40,6 +41,7 @@ void systemd_logind_vtenter(void);
+ #define systemd_logind_release_fd(major, minor, fd) close(fd)
+ #define systemd_logind_controls_session() 0
+ #define systemd_logind_vtenter()
++#define systemd_logind_drop_master()
+ #endif
+ 
+ #endif
+-- 
+2.33.1
+

@@ -1,0 +1,27 @@
+From 1070ffa0953e9200688fc8fae11e3ab0680b86f2 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Tue, 9 Oct 2018 12:28:48 -0400
+Subject: [PATCH xserver] xfree86: LeaveVT from xf86CrtcCloseScreen
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Olivier Fourdan <ofourdan@redhat.com>
+---
+ hw/xfree86/modes/xf86Crtc.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hw/xfree86/modes/xf86Crtc.c b/hw/xfree86/modes/xf86Crtc.c
+index 37a45bb3af..45d325f4d2 100644
+--- a/hw/xfree86/modes/xf86Crtc.c
++++ b/hw/xfree86/modes/xf86Crtc.c
+@@ -776,6 +776,8 @@ xf86CrtcCloseScreen(ScreenPtr screen)
+         crtc->randr_crtc = NULL;
+     }
+ 
++    scrn->LeaveVT(scrn);
++
+     screen->CloseScreen = config->CloseScreen;
+ 
+     xf86RotateCloseScreen(screen);
+-- 
+2.19.0
+

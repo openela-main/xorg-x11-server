@@ -1,0 +1,45 @@
+From b6e18eb57f3dd104704d0a5ec3d2f051645b9068 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Wed, 19 Jun 2019 14:23:56 -0400
+Subject: [PATCH xserver] linux: Fix platform device PCI detection for complex
+ bus topologies
+
+Suppose you're in a Hyper-V guest and are trying to use PCI passthrough.
+The ID_PATH that udev will construct for that looks something like
+"acpi-VMBUS:00-pci-b8c8:00:00.0", and obviously looking for "pci-" in
+the first four characters of that is going to not work.
+
+Instead, strstr. I suppose it's possible you could have _multiple_ PCI
+buses in the path, in which case you'd want strrstr, if that were a
+thing.
+---
+ config/udev.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/config/udev.c b/config/udev.c
+index 314acba6ce..6e11aa3b88 100644
+--- a/config/udev.c
++++ b/config/udev.c
+@@ -474,7 +474,7 @@ config_udev_odev_setup_attribs(struct udev_device *udev_device, const char *path
+                                config_odev_probe_proc_ptr probe_callback)
+ {
+     struct OdevAttributes *attribs = config_odev_allocate_attributes();
+-    const char *value;
++    const char *value, *str;
+ 
+     attribs->path = XNFstrdup(path);
+     attribs->syspath = XNFstrdup(syspath);
+@@ -482,8 +482,8 @@ config_udev_odev_setup_attribs(struct udev_device *udev_device, const char *path
+     attribs->minor = minor;
+ 
+     value = udev_device_get_property_value(udev_device, "ID_PATH");
+-    if (value && !strncmp(value, "pci-", 4)) {
+-        attribs->busid = XNFstrdup(value);
++    if (value && (str = strstr(value, "pci-"))) {
++        attribs->busid = XNFstrdup(str);
+         attribs->busid[3] = ':';
+     }
+ 
+-- 
+2.21.0
+
