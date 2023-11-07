@@ -1,0 +1,49 @@
+From 88f0787f93f097a125a0aa156eb9a5628adfc2c2 Mon Sep 17 00:00:00 2001
+From: Alex Goins <agoins@nvidia.com>
+Date: Thu, 12 Dec 2019 20:18:53 -0600
+Subject: [PATCH xserver] modesetting: Fix msSharePixmapBacking Segfault
+ Regression
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Commit cb1b1e184 modified msSharePixmapBacking() to derive modesettingPtr from
+the 'screen' argument. Unfortunately, the name of the argument is misleading --
+the screen is the slave screen. If the master is modesetting,
+and the slave is not modesetting, it will segfault.
+
+To fix the problem, this change derives modesettingPtr from
+ppix->drawable.pScreen. This method is already used when calling
+ms->glamor.shareable_fd_from_pixmap() later in the function.
+
+To avoid future issues, this change also renames the 'screen' argument to
+'slave'.
+
+Signed-off-by: Alex Goins <agoins@nvidia.com>
+Reviewed-by: Michel Dänzer <mdaenzer@redhat.com>
+(cherry picked from commit 456dff1bf890459840718339279dcb84d36531eb)
+---
+ hw/xfree86/drivers/modesetting/driver.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/hw/xfree86/drivers/modesetting/driver.c b/hw/xfree86/drivers/modesetting/driver.c
+index ce8bac9f5..0817fa470 100644
+--- a/hw/xfree86/drivers/modesetting/driver.c
++++ b/hw/xfree86/drivers/modesetting/driver.c
+@@ -1454,10 +1454,11 @@ CreateScreenResources(ScreenPtr pScreen)
+ }
+ 
+ static Bool
+-msSharePixmapBacking(PixmapPtr ppix, ScreenPtr screen, void **handle)
++msSharePixmapBacking(PixmapPtr ppix, ScreenPtr slave, void **handle)
+ {
+ #ifdef GLAMOR_HAS_GBM
+-    modesettingPtr ms = modesettingPTR(xf86ScreenToScrn(screen));
++    modesettingPtr ms =
++        modesettingPTR(xf86ScreenToScrn(ppix->drawable.pScreen));
+     int ret;
+     CARD16 stride;
+     CARD32 size;
+-- 
+2.34.1
+

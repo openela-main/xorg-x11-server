@@ -1,0 +1,332 @@
+From 94612044171975466f605d5f01769d1c2b9acc5d Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Tue, 8 Oct 2019 13:11:09 -0400
+Subject: [PATCH xserver 07/11] modesetting: Indirect the glamor API through
+ LoaderSymbol
+
+Prerequisite for building all of xserver with -z now.
+
+Gitlab: https://gitlab.freedesktop.org/xorg/xserver/issues/692
+(cherry picked from commit dd63f717fe8636315343f421f4f2ee299258f079)
+---
+ hw/xfree86/drivers/modesetting/dri2.c         | 10 ++--
+ hw/xfree86/drivers/modesetting/driver.c       | 49 ++++++++++++++-----
+ hw/xfree86/drivers/modesetting/driver.h       | 24 +++++++++
+ .../drivers/modesetting/drmmode_display.c     | 17 ++++---
+ hw/xfree86/drivers/modesetting/pageflip.c     |  4 +-
+ hw/xfree86/drivers/modesetting/present.c      |  4 +-
+ 6 files changed, 82 insertions(+), 26 deletions(-)
+
+diff --git a/hw/xfree86/drivers/modesetting/dri2.c b/hw/xfree86/drivers/modesetting/dri2.c
+index d89904b53..724d9d34c 100644
+--- a/hw/xfree86/drivers/modesetting/dri2.c
++++ b/hw/xfree86/drivers/modesetting/dri2.c
+@@ -123,6 +123,7 @@ ms_dri2_create_buffer2(ScreenPtr screen, DrawablePtr drawable,
+                        unsigned int attachment, unsigned int format)
+ {
+     ScrnInfoPtr scrn = xf86ScreenToScrn(screen);
++    modesettingPtr ms = modesettingPTR(scrn);
+     DRI2Buffer2Ptr buffer;
+     PixmapPtr pixmap;
+     CARD32 size;
+@@ -200,7 +201,7 @@ ms_dri2_create_buffer2(ScreenPtr screen, DrawablePtr drawable,
+      */
+     buffer->flags = 0;
+ 
+-    buffer->name = glamor_name_from_pixmap(pixmap, &pitch, &size);
++    buffer->name = ms->glamor.name_from_pixmap(pixmap, &pitch, &size);
+     buffer->pitch = pitch;
+     if (buffer->name == -1) {
+         xf86DrvMsg(scrn->scrnIndex, X_ERROR,
+@@ -509,11 +510,12 @@ update_front(DrawablePtr draw, DRI2BufferPtr front)
+     ScreenPtr screen = draw->pScreen;
+     PixmapPtr pixmap = get_drawable_pixmap(draw);
+     ms_dri2_buffer_private_ptr priv = front->driverPrivate;
++    modesettingPtr ms = modesettingPTR(xf86ScreenToScrn(screen));
+     CARD32 size;
+     CARD16 pitch;
+     int name;
+ 
+-    name = glamor_name_from_pixmap(pixmap, &pitch, &size);
++    name = ms->glamor.name_from_pixmap(pixmap, &pitch, &size);
+     if (name < 0)
+         return FALSE;
+ 
+@@ -617,7 +619,7 @@ ms_dri2_exchange_buffers(DrawablePtr draw, DRI2BufferPtr front,
+     *front_pix = *back_pix;
+     *back_pix = tmp_pix;
+ 
+-    glamor_egl_exchange_buffers(front_priv->pixmap, back_priv->pixmap);
++    ms->glamor.egl_exchange_buffers(front_priv->pixmap, back_priv->pixmap);
+ 
+     /* Post damage on the front buffer so that listeners, such
+      * as DisplayLink know take a copy and shove it over the USB.
+@@ -1036,7 +1038,7 @@ ms_dri2_screen_init(ScreenPtr screen)
+     DRI2InfoRec info;
+     const char *driver_names[2] = { NULL, NULL };
+ 
+-    if (!glamor_supports_pixmap_import_export(screen)) {
++    if (!ms->glamor.supports_pixmap_import_export(screen)) {
+         xf86DrvMsg(scrn->scrnIndex, X_WARNING,
+                    "DRI2: glamor lacks support for pixmap import/export\n");
+     }
+diff --git a/hw/xfree86/drivers/modesetting/driver.c b/hw/xfree86/drivers/modesetting/driver.c
+index a385e7ee2..4f4db67b7 100644
+--- a/hw/xfree86/drivers/modesetting/driver.c
++++ b/hw/xfree86/drivers/modesetting/driver.c
+@@ -615,7 +615,7 @@ redisplay_dirty(ScreenPtr screen, PixmapDirtyUpdatePtr dirty, int *timeout)
+          * the shared pixmap, but not all).
+          */
+         if (ms->drmmode.glamor)
+-            glamor_finish(screen);
++            ms->glamor.finish(screen);
+ #endif
+         /* Ensure the slave processes the damage immediately */
+         if (timeout)
+@@ -743,6 +743,26 @@ FreeRec(ScrnInfoPtr pScrn)
+ 
+ }
+ 
++static void
++bind_glamor_api(void *mod, modesettingPtr ms)
++{
++    ms->glamor.back_pixmap_from_fd = LoaderSymbolFromModule(mod, "glamor_back_pixmap_from_fd");
++    ms->glamor.block_handler = LoaderSymbolFromModule(mod, "glamor_block_handler");
++    ms->glamor.egl_create_textured_pixmap = LoaderSymbolFromModule(mod, "glamor_egl_create_textured_pixmap");
++    ms->glamor.egl_create_textured_pixmap_from_gbm_bo = LoaderSymbolFromModule(mod, "glamor_egl_create_textured_pixmap_from_gbm_bo");
++    ms->glamor.egl_exchange_buffers = LoaderSymbolFromModule(mod, "glamor_egl_exchange_buffers");
++    ms->glamor.egl_get_gbm_device = LoaderSymbolFromModule(mod, "glamor_egl_get_gbm_device");
++    ms->glamor.egl_init = LoaderSymbolFromModule(mod, "glamor_egl_init");
++    ms->glamor.finish = LoaderSymbolFromModule(mod, "glamor_finish");
++    ms->glamor.gbm_bo_from_pixmap = LoaderSymbolFromModule(mod, "glamor_gbm_bo_from_pixmap");
++    ms->glamor.init = LoaderSymbolFromModule(mod, "glamor_init");
++    ms->glamor.name_from_pixmap = LoaderSymbolFromModule(mod, "glamor_name_from_pixmap");
++    ms->glamor.set_drawable_modifiers_func = LoaderSymbolFromModule(mod, "glamor_set_drawable_modifiers_func");
++    ms->glamor.shareable_fd_from_pixmap = LoaderSymbolFromModule(mod, "glamor_shareable_fd_from_pixmap");
++    ms->glamor.supports_pixmap_import_export = LoaderSymbolFromModule(mod, "glamor_supports_pixmap_import_export");
++    ms->glamor.xv_init = LoaderSymbolFromModule(mod, "glamor_xv_init");
++}
++
+ static void
+ try_enable_glamor(ScrnInfoPtr pScrn)
+ {
+@@ -751,6 +771,7 @@ try_enable_glamor(ScrnInfoPtr pScrn)
+                                                        OPTION_ACCEL_METHOD);
+     Bool do_glamor = (!accel_method_str ||
+                       strcmp(accel_method_str, "glamor") == 0);
++    void *mod;
+ 
+     ms->drmmode.glamor = FALSE;
+ 
+@@ -765,8 +786,10 @@ try_enable_glamor(ScrnInfoPtr pScrn)
+         return;
+     }
+ 
+-    if (xf86LoadSubModule(pScrn, GLAMOR_EGL_MODULE_NAME)) {
+-        if (glamor_egl_init(pScrn, ms->fd)) {
++    mod = xf86LoadSubModule(pScrn, GLAMOR_EGL_MODULE_NAME);
++    if (mod) {
++        bind_glamor_api(mod, ms);
++        if (ms->glamor.egl_init(pScrn, ms->fd)) {
+             xf86DrvMsg(pScrn->scrnIndex, X_INFO, "glamor initialized\n");
+             ms->drmmode.glamor = TRUE;
+         } else {
+@@ -1424,11 +1447,12 @@ static Bool
+ msSharePixmapBacking(PixmapPtr ppix, ScreenPtr screen, void **handle)
+ {
+ #ifdef GLAMOR_HAS_GBM
++    modesettingPtr ms = modesettingPTR(xf86ScreenToScrn(screen));
+     int ret;
+     CARD16 stride;
+     CARD32 size;
+-    ret = glamor_shareable_fd_from_pixmap(ppix->drawable.pScreen, ppix,
+-                                          &stride, &size);
++    ret = ms->glamor.shareable_fd_from_pixmap(ppix->drawable.pScreen, ppix,
++                                              &stride, &size);
+     if (ret == -1)
+         return FALSE;
+ 
+@@ -1453,11 +1477,12 @@ msSetSharedPixmapBacking(PixmapPtr ppix, void *fd_handle)
+            return drmmode_SetSlaveBO(ppix, &ms->drmmode, ihandle, 0, 0);
+ 
+     if (ms->drmmode.reverse_prime_offload_mode) {
+-        ret = glamor_back_pixmap_from_fd(ppix, ihandle,
+-                                         ppix->drawable.width,
+-                                         ppix->drawable.height,
+-                                         ppix->devKind, ppix->drawable.depth,
+-                                         ppix->drawable.bitsPerPixel);
++        ret = ms->glamor.back_pixmap_from_fd(ppix, ihandle,
++                                             ppix->drawable.width,
++                                             ppix->drawable.height,
++                                             ppix->devKind,
++                                             ppix->drawable.depth,
++                                             ppix->drawable.bitsPerPixel);
+     } else {
+         int size = ppix->devKind * ppix->drawable.height;
+         ret = drmmode_SetSlaveBO(ppix, &ms->drmmode, ihandle, ppix->devKind, size);
+@@ -1574,7 +1599,7 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
+ 
+ #ifdef GLAMOR_HAS_GBM
+     if (ms->drmmode.glamor)
+-        ms->drmmode.gbm = glamor_egl_get_gbm_device(pScreen);
++        ms->drmmode.gbm = ms->glamor.egl_get_gbm_device(pScreen);
+ #endif
+ 
+     /* HW dependent - FIXME */
+@@ -1718,7 +1743,7 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
+     if (ms->drmmode.glamor) {
+         XF86VideoAdaptorPtr     glamor_adaptor;
+ 
+-        glamor_adaptor = glamor_xv_init(pScreen, 16);
++        glamor_adaptor = ms->glamor.xv_init(pScreen, 16);
+         if (glamor_adaptor != NULL)
+             xf86XVScreenInit(pScreen, &glamor_adaptor, 1);
+         else
+diff --git a/hw/xfree86/drivers/modesetting/driver.h b/hw/xfree86/drivers/modesetting/driver.h
+index 394a20fc1..5e4d2509a 100644
+--- a/hw/xfree86/drivers/modesetting/driver.h
++++ b/hw/xfree86/drivers/modesetting/driver.h
+@@ -132,6 +132,30 @@ typedef struct _modesettingRec {
+         void (*UpdatePacked)(ScreenPtr, shadowBufPtr);
+     } shadow;
+ 
++    /* glamor API */
++    struct {
++        Bool (*back_pixmap_from_fd)(PixmapPtr, int, CARD16, CARD16, CARD16,
++                                    CARD8, CARD8);
++        void (*block_handler)(ScreenPtr);
++        Bool (*egl_create_textured_pixmap)(PixmapPtr, int, int);
++        Bool (*egl_create_textured_pixmap_from_gbm_bo)(PixmapPtr,
++                                                       struct gbm_bo *,
++                                                       Bool);
++        void (*egl_exchange_buffers)(PixmapPtr, PixmapPtr);
++        struct gbm_device *(*egl_get_gbm_device)(ScreenPtr);
++        Bool (*egl_init)(ScrnInfoPtr, int);
++        void (*finish)(ScreenPtr);
++        struct gbm_bo *(*gbm_bo_from_pixmap)(ScreenPtr, PixmapPtr);
++        Bool (*init)(ScreenPtr, unsigned int);
++        int (*name_from_pixmap)(PixmapPtr, CARD16 *, CARD32 *);
++        void (*set_drawable_modifiers_func)(ScreenPtr,
++                                            GetDrawableModifiersFuncPtr);
++        int (*shareable_fd_from_pixmap)(ScreenPtr, PixmapPtr, CARD16 *,
++                                        CARD32 *);
++        Bool (*supports_pixmap_import_export)(ScreenPtr);
++        XF86VideoAdaptorPtr (*xv_init)(ScreenPtr, int);
++    } glamor;
++
+ } modesettingRec, *modesettingPtr;
+ 
+ #define modesettingPTR(p) ((modesettingPtr)((p)->driverPrivate))
+diff --git a/hw/xfree86/drivers/modesetting/drmmode_display.c b/hw/xfree86/drivers/modesetting/drmmode_display.c
+index 6f5f8caf6..28609db7c 100644
+--- a/hw/xfree86/drivers/modesetting/drmmode_display.c
++++ b/hw/xfree86/drivers/modesetting/drmmode_display.c
+@@ -770,7 +770,7 @@ drmmode_crtc_set_mode(xf86CrtcPtr crtc, Bool test_only)
+ #ifdef GLAMOR_HAS_GBM
+     /* Make sure any pending drawing will be visible in a new scanout buffer */
+     if (drmmode->glamor)
+-        glamor_finish(screen);
++        ms->glamor.finish(screen);
+ #endif
+ 
+     if (ms->atomic_modeset) {
+@@ -1385,6 +1385,7 @@ create_pixmap_for_fbcon(drmmode_ptr drmmode, ScrnInfoPtr pScrn, int fbcon_id)
+     PixmapPtr pixmap = drmmode->fbcon_pixmap;
+     drmModeFBPtr fbcon;
+     ScreenPtr pScreen = xf86ScrnToScreen(pScrn);
++    modesettingPtr ms = modesettingPTR(pScrn);
+     Bool ret;
+ 
+     if (pixmap)
+@@ -1405,7 +1406,8 @@ create_pixmap_for_fbcon(drmmode_ptr drmmode, ScrnInfoPtr pScrn, int fbcon_id)
+     if (!pixmap)
+         goto out_free_fb;
+ 
+-    ret = glamor_egl_create_textured_pixmap(pixmap, fbcon->handle, fbcon->pitch);
++    ret = ms->glamor.egl_create_textured_pixmap(pixmap, fbcon->handle,
++                                                fbcon->pitch);
+     if (!ret) {
+       FreePixmap(pixmap);
+       pixmap = NULL;
+@@ -1424,6 +1426,7 @@ drmmode_copy_fb(ScrnInfoPtr pScrn, drmmode_ptr drmmode)
+ #ifdef GLAMOR_HAS_GBM
+     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
+     ScreenPtr pScreen = xf86ScrnToScreen(pScrn);
++    modesettingPtr ms = modesettingPTR(pScrn);
+     PixmapPtr src, dst;
+     int fbcon_id = 0;
+     GCPtr gc;
+@@ -3108,12 +3111,13 @@ drmmode_set_pixmap_bo(drmmode_ptr drmmode, PixmapPtr pixmap, drmmode_bo *bo)
+ {
+ #ifdef GLAMOR_HAS_GBM
+     ScrnInfoPtr scrn = drmmode->scrn;
++    modesettingPtr ms = modesettingPTR(scrn);
+ 
+     if (!drmmode->glamor)
+         return TRUE;
+ 
+-    if (!glamor_egl_create_textured_pixmap_from_gbm_bo(pixmap, bo->gbm,
+-                                                       bo->used_modifiers)) {
++    if (!ms->glamor.egl_create_textured_pixmap_from_gbm_bo(pixmap, bo->gbm,
++                                                           bo->used_modifiers)) {
+         xf86DrvMsg(scrn->scrnIndex, X_ERROR, "Failed to create pixmap\n");
+         return FALSE;
+     }
+@@ -3436,13 +3440,14 @@ drmmode_init(ScrnInfoPtr pScrn, drmmode_ptr drmmode)
+ {
+ #ifdef GLAMOR_HAS_GBM
+     ScreenPtr pScreen = xf86ScrnToScreen(pScrn);
++    modesettingPtr ms = modesettingPTR(pScrn);
+ 
+     if (drmmode->glamor) {
+-        if (!glamor_init(pScreen, GLAMOR_USE_EGL_SCREEN)) {
++        if (!ms->glamor.init(pScreen, GLAMOR_USE_EGL_SCREEN)) {
+             return FALSE;
+         }
+ #ifdef GBM_BO_WITH_MODIFIERS
+-        glamor_set_drawable_modifiers_func(pScreen, get_drawable_modifiers);
++        ms->glamor.set_drawable_modifiers_func(pScreen, get_drawable_modifiers);
+ #endif
+     }
+ #endif
+diff --git a/hw/xfree86/drivers/modesetting/pageflip.c b/hw/xfree86/drivers/modesetting/pageflip.c
+index 1d54816e2..841fa917c 100644
+--- a/hw/xfree86/drivers/modesetting/pageflip.c
++++ b/hw/xfree86/drivers/modesetting/pageflip.c
+@@ -243,9 +243,9 @@ ms_do_pageflip(ScreenPtr screen,
+     uint32_t flags;
+     int i;
+     struct ms_flipdata *flipdata;
+-    glamor_block_handler(screen);
++    ms->glamor.block_handler(screen);
+ 
+-    new_front_bo.gbm = glamor_gbm_bo_from_pixmap(screen, new_front);
++    new_front_bo.gbm = ms->glamor.gbm_bo_from_pixmap(screen, new_front);
+     new_front_bo.dumb = NULL;
+ 
+     if (!new_front_bo.gbm) {
+diff --git a/hw/xfree86/drivers/modesetting/present.c b/hw/xfree86/drivers/modesetting/present.c
+index 186309a29..c700cf116 100644
+--- a/hw/xfree86/drivers/modesetting/present.c
++++ b/hw/xfree86/drivers/modesetting/present.c
+@@ -166,7 +166,7 @@ ms_present_flush(WindowPtr window)
+     modesettingPtr ms = modesettingPTR(scrn);
+ 
+     if (ms->drmmode.glamor)
+-        glamor_block_handler(screen);
++        ms->glamor.block_handler(screen);
+ #endif
+ }
+ 
+@@ -262,7 +262,7 @@ ms_present_check_unflip(RRCrtcPtr crtc,
+ 
+ #ifdef GBM_BO_WITH_MODIFIERS
+     /* Check if buffer format/modifier is supported by all active CRTCs */
+-    gbm = glamor_gbm_bo_from_pixmap(screen, pixmap);
++    gbm = ms->glamor.gbm_bo_from_pixmap(screen, pixmap);
+     if (gbm) {
+         uint32_t format;
+         uint64_t modifier;
+-- 
+2.33.1
+

@@ -1,0 +1,144 @@
+From 13d3bc7a05eb7500c8987358c68c20a4bfe18079 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Tue, 8 Oct 2019 12:52:28 -0400
+Subject: [PATCH xserver 06/11] modesetting: Indirect the shadow API through
+ LoaderSymbol
+
+Prerequisite for building all of xserver with -z now.
+
+Gitlab: https://gitlab.freedesktop.org/xorg/xserver/issues/692
+(cherry picked from commit 45f35a0c6666c5f35df482948e0c8e91167429ef)
+---
+ hw/xfree86/drivers/modesetting/driver.c | 34 +++++++++++--------------
+ hw/xfree86/drivers/modesetting/driver.h | 12 ++++++++-
+ 2 files changed, 26 insertions(+), 20 deletions(-)
+
+diff --git a/hw/xfree86/drivers/modesetting/driver.c b/hw/xfree86/drivers/modesetting/driver.c
+index ec4189a2c..a385e7ee2 100644
+--- a/hw/xfree86/drivers/modesetting/driver.c
++++ b/hw/xfree86/drivers/modesetting/driver.c
+@@ -50,7 +50,6 @@
+ #include "xf86Crtc.h"
+ #include "miscstruct.h"
+ #include "dixstruct.h"
+-#include "shadow.h"
+ #include "xf86xv.h"
+ #include <X11/extensions/Xv.h>
+ #include <xorg-config.h>
+@@ -60,7 +59,6 @@
+ #ifdef XSERVER_LIBPCIACCESS
+ #include <pciaccess.h>
+ #endif
+-
+ #include "driver.h"
+ 
+ static void AdjustFrame(ScrnInfoPtr pScrn, int x, int y);
+@@ -1084,9 +1082,16 @@ PreInit(ScrnInfoPtr pScrn, int flags)
+     }
+ 
+     if (ms->drmmode.shadow_enable) {
+-        if (!xf86LoadSubModule(pScrn, "shadow")) {
++        void *mod = xf86LoadSubModule(pScrn, "shadow");
++
++        if (!mod)
+             return FALSE;
+-        }
++
++        ms->shadow.Setup        = LoaderSymbolFromModule(mod, "shadowSetup");
++        ms->shadow.Add          = LoaderSymbolFromModule(mod, "shadowAdd");
++        ms->shadow.Remove       = LoaderSymbolFromModule(mod, "shadowRemove");
++        ms->shadow.Update32to24 = LoaderSymbolFromModule(mod, "shadowUpdate32to24");
++        ms->shadow.UpdatePacked = LoaderSymbolFromModule(mod, "shadowUpdatePacked");
+     }
+ 
+     return TRUE;
+@@ -1191,9 +1196,9 @@ msUpdatePacked(ScreenPtr pScreen, shadowBufPtr pBuf)
+     } while (0);
+ 
+     if (use_3224)
+-        shadowUpdate32to24(pScreen, pBuf);
++        ms->shadow.Update32to24(pScreen, pBuf);
+     else
+-        shadowUpdatePacked(pScreen, pBuf);
++        ms->shadow.UpdatePacked(pScreen, pBuf);
+ }
+ 
+ static Bool
+@@ -1380,8 +1385,8 @@ CreateScreenResources(ScreenPtr pScreen)
+         FatalError("Couldn't adjust screen pixmap\n");
+ 
+     if (ms->drmmode.shadow_enable) {
+-        if (!shadowAdd(pScreen, rootPixmap, msUpdatePacked, msShadowWindow,
+-                       0, 0))
++        if (!ms->shadow.Add(pScreen, rootPixmap, msUpdatePacked, msShadowWindow,
++                            0, 0))
+             return FALSE;
+     }
+ 
+@@ -1415,15 +1420,6 @@ CreateScreenResources(ScreenPtr pScreen)
+     return ret;
+ }
+ 
+-static Bool
+-msShadowInit(ScreenPtr pScreen)
+-{
+-    if (!shadowSetup(pScreen)) {
+-        return FALSE;
+-    }
+-    return TRUE;
+-}
+-
+ static Bool
+ msSharePixmapBacking(PixmapPtr ppix, ScreenPtr screen, void **handle)
+ {
+@@ -1643,7 +1639,7 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
+         return FALSE;
+     }
+ 
+-    if (ms->drmmode.shadow_enable && !msShadowInit(pScreen)) {
++    if (ms->drmmode.shadow_enable && !ms->shadow.Setup(pScreen)) {
+         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "shadow fb init failed\n");
+         return FALSE;
+     }
+@@ -1887,7 +1883,7 @@ CloseScreen(ScreenPtr pScreen)
+     }
+ 
+     if (ms->drmmode.shadow_enable) {
+-        shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
++        ms->shadow.Remove(pScreen, pScreen->GetScreenPixmap(pScreen));
+         free(ms->drmmode.shadow_fb);
+         ms->drmmode.shadow_fb = NULL;
+         free(ms->drmmode.shadow_fb2);
+diff --git a/hw/xfree86/drivers/modesetting/driver.h b/hw/xfree86/drivers/modesetting/driver.h
+index a99f37871..394a20fc1 100644
+--- a/hw/xfree86/drivers/modesetting/driver.h
++++ b/hw/xfree86/drivers/modesetting/driver.h
+@@ -33,7 +33,7 @@
+ #include <xf86Crtc.h>
+ #include <damage.h>
+ #include <X11/extensions/dpmsconst.h>
+-
++#include <shadow.h>
+ #ifdef GLAMOR_HAS_GBM
+ #define GLAMOR_FOR_XORG 1
+ #include "glamor.h"
+@@ -122,6 +122,16 @@ typedef struct _modesettingRec {
+ 
+     Bool kms_has_modifiers;
+ 
++    /* shadow API */
++    struct {
++        Bool (*Setup)(ScreenPtr);
++        Bool (*Add)(ScreenPtr, PixmapPtr, ShadowUpdateProc, ShadowWindowProc,
++                    int, void *);
++        void (*Remove)(ScreenPtr, PixmapPtr);
++        void (*Update32to24)(ScreenPtr, shadowBufPtr);
++        void (*UpdatePacked)(ScreenPtr, shadowBufPtr);
++    } shadow;
++
+ } modesettingRec, *modesettingPtr;
+ 
+ #define modesettingPTR(p) ((modesettingPtr)((p)->driverPrivate))
+-- 
+2.33.1
+

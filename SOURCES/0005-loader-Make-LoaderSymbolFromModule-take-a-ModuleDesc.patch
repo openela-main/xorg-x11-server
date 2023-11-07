@@ -1,0 +1,50 @@
+From b01ca791b9ba62e25e3533ba35f8e825f02f0f80 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Mon, 18 Nov 2019 16:43:50 -0500
+Subject: [PATCH xserver 05/11] loader: Make LoaderSymbolFromModule take a
+ ModuleDescPtr
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The thing you get back from xf86LoadSubModule is a ModuleDescPtr, not a
+dlsym handle. We don't expose ModuleDescPtr to the drivers, so change
+LoaderSymbolFromModule to cast its void * argument to a ModuleDescPtr.
+
+Reviewed-by: Michel Dänzer <mdaenzer@redhat.com>
+(cherry picked from commit ab61c16ef07fde6eb7110c63c344c54eb2a2d117)
+---
+ hw/xfree86/loader/loader.c  | 3 ++-
+ hw/xfree86/loader/loadmod.c | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/hw/xfree86/loader/loader.c b/hw/xfree86/loader/loader.c
+index 503c47e3a..2580e93d9 100644
+--- a/hw/xfree86/loader/loader.c
++++ b/hw/xfree86/loader/loader.c
+@@ -135,7 +135,8 @@ LoaderSymbol(const char *name)
+ void *
+ LoaderSymbolFromModule(void *handle, const char *name)
+ {
+-    return dlsym(handle, name);
++    ModuleDescPtr mod = handle;
++    return dlsym(mod->handle, name);
+ }
+ 
+ void
+diff --git a/hw/xfree86/loader/loadmod.c b/hw/xfree86/loader/loadmod.c
+index a93a76aa9..81a3a1dd9 100644
+--- a/hw/xfree86/loader/loadmod.c
++++ b/hw/xfree86/loader/loadmod.c
+@@ -776,7 +776,7 @@ LoadModule(const char *module, void *options, const XF86ModReqInfo *modreq,
+             *errmaj = LDR_NOMEM;
+         goto LoadModule_fail;
+     }
+-    initdata = LoaderSymbolFromModule(ret->handle, p);
++    initdata = LoaderSymbolFromModule(ret, p);
+     if (initdata) {
+         ModuleSetupProc setup;
+         ModuleTearDownProc teardown;
+-- 
+2.33.1
+

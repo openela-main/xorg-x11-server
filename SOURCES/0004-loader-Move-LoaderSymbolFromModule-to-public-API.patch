@@ -1,0 +1,42 @@
+From e763a4fa114ba6c0abddf2b43a7297b8b9054855 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Tue, 8 Oct 2019 13:29:22 -0400
+Subject: [PATCH xserver 04/11] loader: Move LoaderSymbolFromModule() to public
+ API
+
+Bare LoaderSymbol() isn't really a great API, this is more of a direct
+map to dlsym like you want.
+
+Gitlab: https://gitlab.freedesktop.org/xorg/xserver/issues/692
+(cherry picked from commit 8760fab0a15805bdd12bb8f12bb1c665fde86cc2)
+---
+ hw/xfree86/common/xf86Module.h | 1 +
+ hw/xfree86/loader/loader.h     | 1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xfree86/common/xf86Module.h b/hw/xfree86/common/xf86Module.h
+index 00aa84ae2..fab8842c4 100644
+--- a/hw/xfree86/common/xf86Module.h
++++ b/hw/xfree86/common/xf86Module.h
+@@ -156,6 +156,7 @@ extern _X_EXPORT void *LoadSubModule(void *, const char *, const char **,
+ extern _X_EXPORT void UnloadSubModule(void *);
+ extern _X_EXPORT void UnloadModule(void *);
+ extern _X_EXPORT void *LoaderSymbol(const char *);
++extern _X_EXPORT void *LoaderSymbolFromModule(void *, const char *);
+ extern _X_EXPORT void LoaderErrorMsg(const char *, const char *, int, int);
+ extern _X_EXPORT Bool LoaderShouldIgnoreABI(void);
+ extern _X_EXPORT int LoaderGetABIVersion(const char *abiclass);
+diff --git a/hw/xfree86/loader/loader.h b/hw/xfree86/loader/loader.h
+index 5a2fe6c60..4e83730a2 100644
+--- a/hw/xfree86/loader/loader.h
++++ b/hw/xfree86/loader/loader.h
+@@ -72,6 +72,5 @@ extern unsigned long LoaderOptions;
+ 
+ /* Internal Functions */
+ void *LoaderOpen(const char *, int *);
+-void *LoaderSymbolFromModule(void *, const char *);
+ 
+ #endif                          /* _LOADER_H */
+-- 
+2.33.1
+
