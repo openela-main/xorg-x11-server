@@ -1,0 +1,37 @@
+From 41e265988a0b6ec456ddd562253e0f82a7c2ede2 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Fri, 27 Sep 2019 11:43:52 -0400
+Subject: [PATCH xserver] modesetting: Reduce "glamor initialization failed"
+ message to X_INFO
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This might be an error or not, for example refusing to work on llvmpipe
+is normal and expected. glamor_egl_init() will print X_ERROR messages if
+appropriate, so we don't need to here.
+
+Reviewed-by: Michel Dänzer <mdaenzer@redhat.com>
+
+(cherry picked from commit cbdde938cbaf604741cd057fac743859ada342ec)
+Signed-off-by: Michel Dänzer <mdaenzer@redhat.com>
+---
+ hw/xfree86/drivers/modesetting/driver.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xfree86/drivers/modesetting/driver.c b/hw/xfree86/drivers/modesetting/driver.c
+index 2aaea5f7d..783d53eaa 100644
+--- a/hw/xfree86/drivers/modesetting/driver.c
++++ b/hw/xfree86/drivers/modesetting/driver.c
+@@ -772,7 +772,7 @@ try_enable_glamor(ScrnInfoPtr pScrn)
+             xf86DrvMsg(pScrn->scrnIndex, X_INFO, "glamor initialized\n");
+             ms->drmmode.glamor = TRUE;
+         } else {
+-            xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
++            xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+                        "glamor initialization failed\n");
+         }
+     } else {
+-- 
+2.26.2
+

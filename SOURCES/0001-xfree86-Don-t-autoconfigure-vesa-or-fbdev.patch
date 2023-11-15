@@ -1,0 +1,27 @@
+From e4dce2bfaf4a61dd8a8ac099638489d4fdff9024 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Tue, 29 May 2018 15:05:10 -0400
+Subject: [PATCH] xfree86: Don't autoconfigure vesa or fbdev
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ hw/xfree86/loader/loadmod.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/hw/xfree86/loader/loadmod.c b/hw/xfree86/loader/loadmod.c
+index a6356bd..1c1c2b1 100644
+--- a/hw/xfree86/loader/loadmod.c
++++ b/hw/xfree86/loader/loadmod.c
+@@ -383,6 +383,9 @@ LoaderListDir(const char *subdir, const char **patternlist)
+                 strcpy(fp, dp->d_name);
+                 if (!(stat(buf, &stat_buf) == 0 && S_ISREG(stat_buf.st_mode)))
+                     continue;
++                if (!strcmp(subdir, "drivers") &&
++                            (strstr(dp->d_name, "vesa") || strstr(dp->d_name, "fbdev")))
++                    continue;
+                 for (p = patterns; p->pattern; p++) {
+                     if (regexec(&p->rex, dp->d_name, 2, match, 0) == 0 &&
+                         match[1].rm_so != -1) {
+-- 
+2.17.0
+

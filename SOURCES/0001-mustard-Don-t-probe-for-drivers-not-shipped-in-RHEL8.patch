@@ -1,0 +1,278 @@
+From b6e50ece375b6b1fbe053b30b52fc40dde5c682b Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Tue, 13 Nov 2018 10:11:36 -0500
+Subject: [PATCH] mustard: Don't probe for drivers not shipped in RHEL8
+
+As with RHEL7, this is mostly to keep spurious probe messages out of the
+X log and prevent questions like "why isn't it loading mga on my
+G200SE" or "why isn't it loading radeon_dri.so on my RN50".
+---
+ hw/xfree86/common/xf86pciBus.c              | 162 --------------------
+ hw/xfree86/dri2/pci_ids/pci_id_driver_map.h |  32 ----
+ 2 files changed, 194 deletions(-)
+
+diff --git a/hw/xfree86/common/xf86pciBus.c b/hw/xfree86/common/xf86pciBus.c
+index b7f9999..398ed45 100644
+--- a/hw/xfree86/common/xf86pciBus.c
++++ b/hw/xfree86/common/xf86pciBus.c
+@@ -1074,107 +1074,12 @@ xf86VideoPtrToDriverList(struct pci_device *dev, XF86MatchedDrivers *md)
+     const char *driverList[5] = { NULL, NULL, NULL, NULL, NULL };
+ 
+     switch (dev->vendor_id) {
+-        /* AMD Geode LX */
+-    case 0x1022:
+-        if (dev->device_id == 0x2081)
+-            driverList[0] = "geode";
+-        break;
+-        /* older Geode products acquired by AMD still carry an NSC vendor_id */
+-    case 0x100b:
+-        if (dev->device_id == 0x0030) {
+-            /* NSC Geode GX2 specifically */
+-            driverList[0] = "geode";
+-            /* GX2 support started its life in the NSC tree and was later
+-               forked by AMD for GEODE so we keep it as a backup */
+-            driverList[1] = "nsc";
+-        }
+-        else
+-            /* other NSC variant e.g. 0x0104 (SC1400), 0x0504 (SCx200) */
+-            driverList[0] = "nsc";
+-        break;
+-        /* Cyrix Geode GX1 */
+-    case 0x1078:
+-        if (dev->device_id == 0x0104)
+-            driverList[0] = "cyrix";
+-        break;
+-    case 0x1142:
+-        driverList[0] = "apm";
+-        break;
+-    case 0xedd8:
+-        driverList[0] = "ark";
+-        break;
+-    case 0x1a03:
+-        driverList[0] = "ast";
+-        break;
+     case 0x1002:
+         driverList[0] = "ati";
+         break;
+-    case 0x102c:
+-        driverList[0] = "chips";
+-        break;
+-    case 0x1013:
+-        driverList[0] = "cirrus";
+-        break;
+-    case 0x3d3d:
+-        driverList[0] = "glint";
+-        break;
+-    case 0x105d:
+-        driverList[0] = "i128";
+-        break;
+     case 0x8086:
+ 	switch (dev->device_id)
+ 	{
+-		/* Intel i740 */
+-		case 0x00d1:
+-		case 0x7800:
+-			driverList[0] = "i740";
+-			break;
+-		/* GMA500/Poulsbo */
+-		case 0x8108:
+-		case 0x8109:
+-			/* Try psb driver on Poulsbo - if available */
+-			driverList[0] = "psb";
+-			driverList[1] = "psb_drv";
+-			break;
+-		/* GMA600/Oaktrail */
+-		case 0x4100:
+-		case 0x4101:
+-		case 0x4102:
+-		case 0x4103:
+-		case 0x4104:
+-		case 0x4105:
+-		case 0x4106:
+-		case 0x4107:
+-		/* Atom E620/Oaktrail */
+-		case 0x4108:
+-		/* Medfield */
+-		case 0x0130:
+-		case 0x0131:
+-		case 0x0132:
+-		case 0x0133:
+-		case 0x0134:
+-		case 0x0135:
+-		case 0x0136:
+-		case 0x0137:
+-		/* GMA 3600/CDV */
+-		case 0x0be0:
+-		case 0x0be1:
+-		case 0x0be2:
+-		case 0x0be3:
+-		case 0x0be4:
+-		case 0x0be5:
+-		case 0x0be6:
+-		case 0x0be7:
+-		case 0x0be8:
+-		case 0x0be9:
+-		case 0x0bea:
+-		case 0x0beb:
+-		case 0x0bec:
+-		case 0x0bed:
+-		case 0x0bee:
+-		case 0x0bef:
+-			/* Use fbdev/vesa driver on Oaktrail, Medfield, CDV */
+-			break;
+ 		/* Default to intel only on pre-gen4 chips */
+ 		case 0x3577:
+ 		case 0x2562:
+@@ -1196,14 +1101,7 @@ xf86VideoPtrToDriverList(struct pci_device *dev, XF86MatchedDrivers *md)
+ 			break;
+         }
+         break;
+-    case 0x102b:
+-        driverList[0] = "mga";
+-        break;
+-    case 0x10c8:
+-        driverList[0] = "neomagic";
+-        break;
+     case 0x10de:
+-    case 0x12d2:
+     {
+         int idx = 0;
+ 
+@@ -1229,77 +1127,17 @@ xf86VideoPtrToDriverList(struct pci_device *dev, XF86MatchedDrivers *md)
+ 
+         driverList[idx++] = "nouveau";
+ #endif
+-        driverList[idx++] = "nv";
+         break;
+     }
+-    case 0x1106:
+-        driverList[0] = "openchrome";
+-        break;
+     case 0x1b36:
+         driverList[0] = "qxl";
+         break;
+-    case 0x1163:
+-        driverList[0] = "rendition";
+-        break;
+-    case 0x5333:
+-        switch (dev->device_id) {
+-        case 0x88d0:
+-        case 0x88d1:
+-        case 0x88f0:
+-        case 0x8811:
+-        case 0x8812:
+-        case 0x8814:
+-        case 0x8901:
+-            driverList[0] = "s3";
+-            break;
+-        case 0x5631:
+-        case 0x883d:
+-        case 0x8a01:
+-        case 0x8a10:
+-        case 0x8c01:
+-        case 0x8c03:
+-        case 0x8904:
+-        case 0x8a13:
+-            driverList[0] = "s3virge";
+-            break;
+-        default:
+-            driverList[0] = "savage";
+-            break;
+-        }
+-        break;
+-    case 0x1039:
+-        driverList[0] = "sis";
+-        break;
+-    case 0x126f:
+-        driverList[0] = "siliconmotion";
+-        break;
+-    case 0x121a:
+-        if (dev->device_id < 0x0003)
+-            driverList[0] = "voodoo";
+-        else
+-            driverList[0] = "tdfx";
+-        break;
+-    case 0x1011:
+-        driverList[0] = "tga";
+-        break;
+-    case 0x1023:
+-        driverList[0] = "trident";
+-        break;
+-    case 0x100c:
+-        driverList[0] = "tseng";
+-        break;
+     case 0x80ee:
+         driverList[0] = "vboxvideo";
+         break;
+     case 0x15ad:
+         driverList[0] = "vmware";
+         break;
+-    case 0x18ca:
+-        if (dev->device_id == 0x47)
+-            driverList[0] = "xgixp";
+-        else
+-            driverList[0] = "xgi";
+-        break;
+     default:
+         break;
+     }
+diff --git a/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h b/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h
+index 7036d10..689a570 100644
+--- a/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h
++++ b/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h
+@@ -7,38 +7,12 @@
+ #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+ #endif
+ 
+-static const int i915_chip_ids[] = {
+-#define CHIPSET(chip, desc, name) chip,
+-#include "pci_ids/i915_pci_ids.h"
+-#undef CHIPSET
+-};
+-
+ static const int i965_chip_ids[] = {
+ #define CHIPSET(chip, family, name) chip,
+ #include "pci_ids/i965_pci_ids.h"
+ #undef CHIPSET
+ };
+ 
+-#ifndef DRIVER_MAP_GALLIUM_ONLY
+-static const int r100_chip_ids[] = {
+-#define CHIPSET(chip, name, family) chip,
+-#include "pci_ids/radeon_pci_ids.h"
+-#undef CHIPSET
+-};
+-
+-static const int r200_chip_ids[] = {
+-#define CHIPSET(chip, name, family) chip,
+-#include "pci_ids/r200_pci_ids.h"
+-#undef CHIPSET
+-};
+-#endif
+-
+-static const int r300_chip_ids[] = {
+-#define CHIPSET(chip, name, family) chip,
+-#include "pci_ids/r300_pci_ids.h"
+-#undef CHIPSET
+-};
+-
+ static const int r600_chip_ids[] = {
+ #define CHIPSET(chip, name, family) chip,
+ #include "pci_ids/r600_pci_ids.h"
+@@ -70,13 +44,7 @@ static const struct {
+    const int *chip_ids;
+    int num_chips_ids;
+ } driver_map[] = {
+-   { 0x8086, "i915", "i915", i915_chip_ids, ARRAY_SIZE(i915_chip_ids) },
+    { 0x8086, "i965", "va_gl", i965_chip_ids, ARRAY_SIZE(i965_chip_ids) },
+-#ifndef DRIVER_MAP_GALLIUM_ONLY
+-   { 0x1002, "radeon", "radeon", r100_chip_ids, ARRAY_SIZE(r100_chip_ids) },
+-   { 0x1002, "r200", "r200", r200_chip_ids, ARRAY_SIZE(r200_chip_ids) },
+-#endif
+-   { 0x1002, "r300", "r300", r300_chip_ids, ARRAY_SIZE(r300_chip_ids) },
+    { 0x1002, "r600","r600",  r600_chip_ids, ARRAY_SIZE(r600_chip_ids) },
+    { 0x1002, "radeonsi", "radeonsi", radeonsi_chip_ids, ARRAY_SIZE(radeonsi_chip_ids) },
+    { 0x10de, "nouveau", "nouveau", NULL, -1 },
+-- 
+2.19.1
+
