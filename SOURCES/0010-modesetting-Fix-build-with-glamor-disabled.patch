@@ -1,0 +1,94 @@
+From d8271417a5986240f1f81cbe269e0cd07a9104d1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Mon, 10 Feb 2020 18:41:44 +0100
+Subject: [PATCH xserver 10/11] modesetting: Fix build with glamor disabled
+
+Fixes: cb1b1e184723 "modesetting: Indirect the glamor API through
+                     LoaderSymbol"
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+(cherry picked from commit 0cb9fa7949d6c5398de220fbdbe1e262e943fcbb)
+---
+ hw/xfree86/drivers/modesetting/driver.c | 21 +++++++++++++++------
+ hw/xfree86/drivers/modesetting/driver.h |  3 ++-
+ 2 files changed, 17 insertions(+), 7 deletions(-)
+
+diff --git a/hw/xfree86/drivers/modesetting/driver.c b/hw/xfree86/drivers/modesetting/driver.c
+index 08cf6a1b4..ce8bac9f5 100644
+--- a/hw/xfree86/drivers/modesetting/driver.c
++++ b/hw/xfree86/drivers/modesetting/driver.c
+@@ -743,9 +743,17 @@ FreeRec(ScrnInfoPtr pScrn)
+ 
+ }
+ 
+-static void
+-bind_glamor_api(void *mod, modesettingPtr ms)
++#ifdef GLAMOR_HAS_GBM
++
++static Bool
++load_glamor(ScrnInfoPtr pScrn)
+ {
++    void *mod = xf86LoadSubModule(pScrn, GLAMOR_EGL_MODULE_NAME);
++    modesettingPtr ms = modesettingPTR(pScrn);
++
++    if (!mod)
++        return FALSE;
++
+     ms->glamor.back_pixmap_from_fd = LoaderSymbolFromModule(mod, "glamor_back_pixmap_from_fd");
+     ms->glamor.block_handler = LoaderSymbolFromModule(mod, "glamor_block_handler");
+     ms->glamor.egl_create_textured_pixmap = LoaderSymbolFromModule(mod, "glamor_egl_create_textured_pixmap");
+@@ -762,8 +770,12 @@ bind_glamor_api(void *mod, modesettingPtr ms)
+     ms->glamor.supports_pixmap_import_export = LoaderSymbolFromModule(mod, "glamor_supports_pixmap_import_export");
+     ms->glamor.xv_init = LoaderSymbolFromModule(mod, "glamor_xv_init");
+     ms->glamor.egl_get_driver_name = LoaderSymbolFromModule(mod, "glamor_egl_get_driver_name");
++
++    return TRUE;
+ }
+ 
++#endif
++
+ static void
+ try_enable_glamor(ScrnInfoPtr pScrn)
+ {
+@@ -772,7 +784,6 @@ try_enable_glamor(ScrnInfoPtr pScrn)
+                                                        OPTION_ACCEL_METHOD);
+     Bool do_glamor = (!accel_method_str ||
+                       strcmp(accel_method_str, "glamor") == 0);
+-    void *mod;
+ 
+     ms->drmmode.glamor = FALSE;
+ 
+@@ -787,9 +798,7 @@ try_enable_glamor(ScrnInfoPtr pScrn)
+         return;
+     }
+ 
+-    mod = xf86LoadSubModule(pScrn, GLAMOR_EGL_MODULE_NAME);
+-    if (mod) {
+-        bind_glamor_api(mod, ms);
++    if (load_glamor(pScrn)) {
+         if (ms->glamor.egl_init(pScrn, ms->fd)) {
+             xf86DrvMsg(pScrn->scrnIndex, X_INFO, "glamor initialized\n");
+             ms->drmmode.glamor = TRUE;
+diff --git a/hw/xfree86/drivers/modesetting/driver.h b/hw/xfree86/drivers/modesetting/driver.h
+index 328a97de1..261f1aac4 100644
+--- a/hw/xfree86/drivers/modesetting/driver.h
++++ b/hw/xfree86/drivers/modesetting/driver.h
+@@ -132,6 +132,7 @@ typedef struct _modesettingRec {
+         void (*UpdatePacked)(ScreenPtr, shadowBufPtr);
+     } shadow;
+ 
++#ifdef GLAMOR_HAS_GBM
+     /* glamor API */
+     struct {
+         Bool (*back_pixmap_from_fd)(PixmapPtr, int, CARD16, CARD16, CARD16,
+@@ -156,7 +157,7 @@ typedef struct _modesettingRec {
+         XF86VideoAdaptorPtr (*xv_init)(ScreenPtr, int);
+         const char *(*egl_get_driver_name)(ScreenPtr);
+     } glamor;
+-
++#endif
+ } modesettingRec, *modesettingPtr;
+ 
+ #define glamor_finish(screen) ms->glamor.finish(screen)
+-- 
+2.33.1
+

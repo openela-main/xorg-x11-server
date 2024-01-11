@@ -1,0 +1,63 @@
+From ae40c508fbd88869157412a1b159c0d71eb1e708 Mon Sep 17 00:00:00 2001
+From: Kenneth Graunke <kenneth@whitecape.org>
+Date: Thu, 21 Nov 2019 23:03:50 -0800
+Subject: [PATCH xserver 09/11] modesetting: Use EGL_MESA_query_driver to
+ select DRI driver if possible
+
+New now ask Glamor to use EGL_MESA_query_driver to obtain the DRI driver
+name; if successful, we use that as the DRI driver name.  Following the
+existing dri2.c logic, we also use the same name for the VDPAU driver,
+except for i965 (and now iris), where we switch to the "va_gl" fallback.
+
+This allows us to bypass the PCI ID lists in xserver and centralize the
+driver selection mechanism inside Mesa.  The hope is that we no longer
+have to update these lists for any future hardware.
+
+(cherry picked from commit 8d4be7f6c4f7c673d7ec1a6bfdef944907a3916e)
+---
+ hw/xfree86/drivers/modesetting/dri2.c   | 3 ++-
+ hw/xfree86/drivers/modesetting/driver.c | 1 +
+ hw/xfree86/drivers/modesetting/driver.h | 1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/hw/xfree86/drivers/modesetting/dri2.c b/hw/xfree86/drivers/modesetting/dri2.c
+index 724d9d34c..255c72cac 100644
+--- a/hw/xfree86/drivers/modesetting/dri2.c
++++ b/hw/xfree86/drivers/modesetting/dri2.c
+@@ -1076,7 +1076,8 @@ ms_dri2_screen_init(ScreenPtr screen)
+     info.CopyRegion2 = ms_dri2_copy_region2;
+ 
+     /* Ask Glamor to obtain the DRI driver name via EGL_MESA_query_driver. */
+-    driver_names[0] = glamor_egl_get_driver_name(screen);
++    if (ms->glamor.egl_get_driver_name)
++        driver_names[0] = ms->glamor.egl_get_driver_name(screen);
+ 
+     if (driver_names[0]) {
+         /* There is no VDPAU driver for Intel, fallback to the generic
+diff --git a/hw/xfree86/drivers/modesetting/driver.c b/hw/xfree86/drivers/modesetting/driver.c
+index afba8538a..08cf6a1b4 100644
+--- a/hw/xfree86/drivers/modesetting/driver.c
++++ b/hw/xfree86/drivers/modesetting/driver.c
+@@ -761,6 +761,7 @@ bind_glamor_api(void *mod, modesettingPtr ms)
+     ms->glamor.shareable_fd_from_pixmap = LoaderSymbolFromModule(mod, "glamor_shareable_fd_from_pixmap");
+     ms->glamor.supports_pixmap_import_export = LoaderSymbolFromModule(mod, "glamor_supports_pixmap_import_export");
+     ms->glamor.xv_init = LoaderSymbolFromModule(mod, "glamor_xv_init");
++    ms->glamor.egl_get_driver_name = LoaderSymbolFromModule(mod, "glamor_egl_get_driver_name");
+ }
+ 
+ static void
+diff --git a/hw/xfree86/drivers/modesetting/driver.h b/hw/xfree86/drivers/modesetting/driver.h
+index c6e7cd0c8..328a97de1 100644
+--- a/hw/xfree86/drivers/modesetting/driver.h
++++ b/hw/xfree86/drivers/modesetting/driver.h
+@@ -154,6 +154,7 @@ typedef struct _modesettingRec {
+                                         CARD32 *);
+         Bool (*supports_pixmap_import_export)(ScreenPtr);
+         XF86VideoAdaptorPtr (*xv_init)(ScreenPtr, int);
++        const char *(*egl_get_driver_name)(ScreenPtr);
+     } glamor;
+ 
+ } modesettingRec, *modesettingPtr;
+-- 
+2.33.1
+

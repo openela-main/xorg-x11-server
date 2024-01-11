@@ -1,0 +1,58 @@
+From 7f1bedcf27cfd09162544ff1b18c21c8e5695a9d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Fri, 22 Nov 2019 18:05:04 +0100
+Subject: [PATCH xserver 08/11] modesetting: Add glamor_finish() convenience
+ macro
+
+This will simplify backporting the following fix to the 1.20 branch.
+
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+(cherry picked from commit 06ef320e9bc1f1098df9cd5581f072528f28128e)
+---
+ hw/xfree86/drivers/modesetting/driver.c          | 2 +-
+ hw/xfree86/drivers/modesetting/driver.h          | 2 ++
+ hw/xfree86/drivers/modesetting/drmmode_display.c | 2 +-
+ 3 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/hw/xfree86/drivers/modesetting/driver.c b/hw/xfree86/drivers/modesetting/driver.c
+index 4f4db67b7..afba8538a 100644
+--- a/hw/xfree86/drivers/modesetting/driver.c
++++ b/hw/xfree86/drivers/modesetting/driver.c
+@@ -615,7 +615,7 @@ redisplay_dirty(ScreenPtr screen, PixmapDirtyUpdatePtr dirty, int *timeout)
+          * the shared pixmap, but not all).
+          */
+         if (ms->drmmode.glamor)
+-            ms->glamor.finish(screen);
++            glamor_finish(screen);
+ #endif
+         /* Ensure the slave processes the damage immediately */
+         if (timeout)
+diff --git a/hw/xfree86/drivers/modesetting/driver.h b/hw/xfree86/drivers/modesetting/driver.h
+index 5e4d2509a..c6e7cd0c8 100644
+--- a/hw/xfree86/drivers/modesetting/driver.h
++++ b/hw/xfree86/drivers/modesetting/driver.h
+@@ -158,6 +158,8 @@ typedef struct _modesettingRec {
+ 
+ } modesettingRec, *modesettingPtr;
+ 
++#define glamor_finish(screen) ms->glamor.finish(screen)
++
+ #define modesettingPTR(p) ((modesettingPtr)((p)->driverPrivate))
+ modesettingEntPtr ms_ent_priv(ScrnInfoPtr scrn);
+ 
+diff --git a/hw/xfree86/drivers/modesetting/drmmode_display.c b/hw/xfree86/drivers/modesetting/drmmode_display.c
+index 28609db7c..6516fac5f 100644
+--- a/hw/xfree86/drivers/modesetting/drmmode_display.c
++++ b/hw/xfree86/drivers/modesetting/drmmode_display.c
+@@ -770,7 +770,7 @@ drmmode_crtc_set_mode(xf86CrtcPtr crtc, Bool test_only)
+ #ifdef GLAMOR_HAS_GBM
+     /* Make sure any pending drawing will be visible in a new scanout buffer */
+     if (drmmode->glamor)
+-        ms->glamor.finish(screen);
++        glamor_finish(screen);
+ #endif
+ 
+     if (ms->atomic_modeset) {
+-- 
+2.33.1
+

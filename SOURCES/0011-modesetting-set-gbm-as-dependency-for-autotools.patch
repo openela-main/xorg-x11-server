@@ -1,0 +1,33 @@
+From 55fb707d037004e001623a0d066f748d8ba48d48 Mon Sep 17 00:00:00 2001
+From: Olivier Fourdan <ofourdan@redhat.com>
+Date: Tue, 23 Nov 2021 12:19:48 +0100
+Subject: [PATCH xserver 11/11] modesetting: set gbm as dependency for
+ autotools
+
+Same as commit 9d628ee5f for automake.
+
+Modifiers support needs gbm as a dependency. Without setting the dependency
+included headers are not found reliably and the build might fail if the
+headers are not placed in the default system include paths.
+
+Signed-off-by: Olivier Fourdan <ofourdan@redhat.com>
+---
+ hw/xfree86/drivers/modesetting/Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xfree86/drivers/modesetting/Makefile.am b/hw/xfree86/drivers/modesetting/Makefile.am
+index 961c57408..ac5091be3 100644
+--- a/hw/xfree86/drivers/modesetting/Makefile.am
++++ b/hw/xfree86/drivers/modesetting/Makefile.am
+@@ -41,7 +41,7 @@ AM_CPPFLAGS = \
+ 
+ modesetting_drv_la_LTLIBRARIES = modesetting_drv.la
+ modesetting_drv_la_LDFLAGS = -module -avoid-version
+-modesetting_drv_la_LIBADD = $(UDEV_LIBS) $(DRM_LIBS)
++modesetting_drv_la_LIBADD = $(UDEV_LIBS) $(DRM_LIBS) $(GBM_LIBS)
+ modesetting_drv_ladir = @moduledir@/drivers
+ 
+ modesetting_drv_la_SOURCES = \
+-- 
+2.33.1
+
