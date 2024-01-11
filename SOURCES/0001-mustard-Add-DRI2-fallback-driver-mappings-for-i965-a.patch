@@ -1,0 +1,28 @@
+From efb4bc5b3da511d128144840d7eb3cf3c7cfa0ae Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Tue, 3 Sep 2019 12:10:37 -0400
+Subject: [PATCH] mustard: Add DRI2 fallback driver mappings for i965 and
+ radeonsi
+
+---
+ hw/xfree86/dri2/pci_ids/pci_id_driver_map.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h b/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h
+index 689a570..3825f52 100644
+--- a/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h
++++ b/hw/xfree86/dri2/pci_ids/pci_id_driver_map.h
+@@ -45,8 +45,10 @@ static const struct {
+    int num_chips_ids;
+ } driver_map[] = {
+    { 0x8086, "i965", "va_gl", i965_chip_ids, ARRAY_SIZE(i965_chip_ids) },
++   { 0x8086, "i965", "va_gl", NULL, -1 },
+    { 0x1002, "r600","r600",  r600_chip_ids, ARRAY_SIZE(r600_chip_ids) },
+    { 0x1002, "radeonsi", "radeonsi", radeonsi_chip_ids, ARRAY_SIZE(radeonsi_chip_ids) },
++   { 0x1002, "radeonsi", "radeonsi", NULL, -1 },
+    { 0x10de, "nouveau", "nouveau", NULL, -1 },
+    { 0x1af4, "virtio_gpu", "virtio_gpu", virtio_gpu_chip_ids, ARRAY_SIZE(virtio_gpu_chip_ids) },
+    { 0x15ad, "vmwgfx", "vmwgfx", vmwgfx_chip_ids, ARRAY_SIZE(vmwgfx_chip_ids) },
+-- 
+2.23.0
+

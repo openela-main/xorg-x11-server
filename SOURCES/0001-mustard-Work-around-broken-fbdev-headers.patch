@@ -1,0 +1,34 @@
+From a4fc2f3a55776018eda20e09c11b3710f8f0e542 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Fri, 26 Oct 2018 14:16:17 -0400
+Subject: [PATCH xserver] mustard: Work around broken fbdev headers
+
+This configure check is somewhat pointless as we have our own copy of
+the fbdev ioctl declarations. There's also a bug in the version of the
+kernel headers I happen to want to build against, where an IS_ENABLED()
+escaped into uapi like it oughtn't.
+
+Nerf the test so we build the right fbdevhw code.
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ configure.ac | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 57a2331024..2b8477ed61 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -197,8 +197,7 @@ AC_CHECK_HEADERS([linux/agpgart.h sys/agpio.h sys/agpgart.h], AGP=yes)
+ AM_CONDITIONAL(AGP, [test "x$AGP" = xyes])
+ 
+ dnl fbdev header
+-AC_CHECK_HEADERS([linux/fb.h], FBDEV=yes)
+-AM_CONDITIONAL(FBDEVHW, [test "x$FBDEV" = xyes])
++AM_CONDITIONAL(FBDEVHW, true)
+ 
+ dnl FreeBSD kldload support (sys/linker.h)
+ AC_CHECK_HEADERS([sys/linker.h],
+-- 
+2.19.1
+

@@ -1,0 +1,129 @@
+From 28320833d61af76dc3b77b985c69706f3e021836 Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Tue, 18 Sep 2018 14:37:51 -0400
+Subject: [PATCH xserver] linux: Make platform device probe less fragile
+
+At the point where xf86BusProbe runs we haven't yet taken our own VT,
+which means we can't perform drm "master" operations on the device. This
+is tragic, because we need master to fish the bus id string out of the
+kernel, which we can only do after drmSetInterfaceVersion, which for
+some reason stores that string on the device not the file handle and
+thus needs master access.
+
+Fortunately we know the format of the busid string, and it happens to
+almost be the same as the ID_PATH variable from udev. Use that instead
+and stop calling drmSetInterfaceVersion.
+
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+---
+ config/udev.c                              | 17 ++++++++++++-----
+ hw/xfree86/os-support/linux/lnx_platform.c | 13 ++-----------
+ 2 files changed, 14 insertions(+), 16 deletions(-)
+
+diff --git a/config/udev.c b/config/udev.c
+index 3a73189e25..8c6c4b6665 100644
+--- a/config/udev.c
++++ b/config/udev.c
+@@ -56,7 +56,7 @@ static struct udev_monitor *udev_monitor;
+ 
+ #ifdef CONFIG_UDEV_KMS
+ static void
+-config_udev_odev_setup_attribs(const char *path, const char *syspath,
++config_udev_odev_setup_attribs(struct udev_device *udev_device, const char *path, const char *syspath,
+                                int major, int minor,
+                                config_odev_probe_proc_ptr probe_callback);
+ #endif
+@@ -128,7 +128,7 @@ device_added(struct udev_device *udev_device)
+ 
+         LogMessage(X_INFO, "config/udev: Adding drm device (%s)\n", path);
+ 
+-        config_udev_odev_setup_attribs(path, syspath, major(devnum),
++        config_udev_odev_setup_attribs(udev_device, path, syspath, major(devnum),
+                                        minor(devnum), NewGPUDeviceRequest);
+         return;
+     }
+@@ -322,7 +322,7 @@ device_removed(struct udev_device *device)
+ 
+         LogMessage(X_INFO, "config/udev: removing GPU device %s %s\n",
+                    syspath, path);
+-        config_udev_odev_setup_attribs(path, syspath, major(devnum),
++        config_udev_odev_setup_attribs(device, path, syspath, major(devnum),
+                                        minor(devnum), DeleteGPUDeviceRequest);
+         /* Retry vtenter after a drm node removal */
+         systemd_logind_vtenter();
+@@ -465,17 +465,24 @@ config_udev_fini(void)
+ #ifdef CONFIG_UDEV_KMS
+ 
+ static void
+-config_udev_odev_setup_attribs(const char *path, const char *syspath,
++config_udev_odev_setup_attribs(struct udev_device *udev_device, const char *path, const char *syspath,
+                                int major, int minor,
+                                config_odev_probe_proc_ptr probe_callback)
+ {
+     struct OdevAttributes *attribs = config_odev_allocate_attributes();
++    const char *value;
+ 
+     attribs->path = XNFstrdup(path);
+     attribs->syspath = XNFstrdup(syspath);
+     attribs->major = major;
+     attribs->minor = minor;
+ 
++    value = udev_device_get_property_value(udev_device, "ID_PATH");
++    if (value && !strncmp(value, "pci-", 4)) {
++        attribs->busid = XNFstrdup(value);
++        attribs->busid[3] = ':';
++    }
++
+     /* ownership of attribs is passed to probe layer */
+     probe_callback(attribs);
+ }
+@@ -516,7 +523,7 @@ config_udev_odev_probe(config_odev_probe_proc_ptr probe_callback)
+         else if (!check_seat(udev_device))
+             goto no_probe;
+ 
+-        config_udev_odev_setup_attribs(path, syspath, major(devnum),
++        config_udev_odev_setup_attribs(udev_device, path, syspath, major(devnum),
+                                        minor(devnum), probe_callback);
+     no_probe:
+         udev_device_unref(udev_device);
+diff --git a/hw/xfree86/os-support/linux/lnx_platform.c b/hw/xfree86/os-support/linux/lnx_platform.c
+index 70374ace88..0eb6d22875 100644
+--- a/hw/xfree86/os-support/linux/lnx_platform.c
++++ b/hw/xfree86/os-support/linux/lnx_platform.c
+@@ -30,6 +30,8 @@ get_drm_info(struct OdevAttributes *attribs, char *path, int delayed_index)
+     int err = 0;
+     Bool paused, server_fd = FALSE;
+ 
++    LogMessage(X_INFO, "Platform probe for %s\n", attribs->syspath);
++
+     fd = systemd_logind_take_fd(attribs->major, attribs->minor, path, &paused);
+     if (fd != -1) {
+         if (paused) {
+@@ -53,13 +55,6 @@ get_drm_info(struct OdevAttributes *attribs, char *path, int delayed_index)
+     sv.drm_dd_major = -1;       /* Don't care */
+     sv.drm_dd_minor = -1;       /* Don't care */
+ 
+-    err = drmSetInterfaceVersion(fd, &sv);
+-    if (err) {
+-        xf86Msg(X_ERROR, "%s: failed to set DRM interface version 1.4: %s\n",
+-                path, strerror(-err));
+-        goto out;
+-    }
+-
+     /* for a delayed probe we've already added the device */
+     if (delayed_index == -1) {
+             xf86_add_platform_device(attribs, FALSE);
+@@ -69,10 +64,6 @@ get_drm_info(struct OdevAttributes *attribs, char *path, int delayed_index)
+     if (server_fd)
+         xf86_platform_devices[delayed_index].flags |= XF86_PDEV_SERVER_FD;
+ 
+-    buf = drmGetBusid(fd);
+-    xf86_platform_odev_attributes(delayed_index)->busid = XNFstrdup(buf);
+-    drmFreeBusid(buf);
+-
+     v = drmGetVersion(fd);
+     if (!v) {
+         xf86Msg(X_ERROR, "%s: failed to query DRM version\n", path);
+-- 
+2.19.0
+
