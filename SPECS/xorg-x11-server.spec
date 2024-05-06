@@ -42,7 +42,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   19%{?gitdate:.%{gitdate}}%{?dist}
+Release:   24%{?gitdate:.%{gitdate}}%{?dist}
 URL:       http://www.x.org
 License:   MIT
 
@@ -157,6 +157,33 @@ Patch10025: 0008-Xext-fix-invalid-event-type-mask-in-XTestSwapFakeInp.patch
 Patch10026: 0001-Xi-fix-potential-use-after-free-in-DeepCopyPointerCl.patch
 # CVE-2023-1393
 Patch10027: 0001-composite-Fix-use-after-free-of-the-COW.patch
+# CVE-2023-5367
+Patch10028: 0001-Xi-randr-fix-handling-of-PropModeAppend-Prepend.patch
+# CVE-2023-5380
+Patch10029: 0002-mi-reset-the-PointerWindows-reference-on-screen-swit.patch
+# CVE-2023-6377
+Patch10030: 0001-Xi-allocate-enough-XkbActions-for-our-buttons.patch
+# CVE-2023-6478
+Patch10031: 0001-randr-avoid-integer-truncation-in-length-check-of-Pr.patch
+# CVE-2023-6816
+Patch10032: 0001-dix-allocate-enough-space-for-logical-button-maps.patch
+# CVE-2024-0229
+Patch10033: 0002-dix-Allocate-sufficient-xEvents-for-our-DeviceStateN.patch
+Patch10034: 0003-dix-fix-DeviceStateNotify-event-calculation.patch
+Patch10035: 0004-Xi-when-creating-a-new-ButtonClass-set-the-number-of.patch
+# CVE-2024-21885
+Patch10036: 0005-Xi-flush-hierarchy-events-after-adding-removing-mast.patch
+# CVE-2024-21886
+Patch10037: 0006-Xi-do-not-keep-linked-list-pointer-during-recursion.patch
+Patch10038: 0007-dix-when-disabling-a-master-float-disabled-slaved-de.patch
+# CVE-2024-0408
+Patch10039: 0008-glx-Call-XACE-hooks-on-the-GLX-buffer.patch
+# CVE-2024-0409
+Patch10040: 0009-ephyr-xwayland-Use-the-proper-private-key-for-cursor.patch
+# Fix compilation error
+Patch10041: 0001-hw-Rename-boolean-config-value-field-from-bool-to-bo.patch
+# Related to CVE-2024-21886
+Patch10042: 0001-dix-Fix-use-after-free-in-input-device-shutdown.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -566,6 +593,32 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Thu Jan 18 2024 José Expósito <jexposit@redhat.com> - 1.20.4-24
+- Fix use after free related to CVE-2024-21886
+
+* Tue Jan 16 2024 José Expósito <jexposit@redhat.com> - 1.20.11-23
+- CVE fix for: CVE-2023-6816, CVE-2024-0229, CVE-2024-21885, CVE-2024-21886,
+  CVE-2024-0408 and CVE-2024-0409
+  Resolves: https://issues.redhat.com/browse/RHEL-21203
+  Resolves: https://issues.redhat.com/browse/RHEL-20531
+  Resolves: https://issues.redhat.com/browse/RHEL-20380
+  Resolves: https://issues.redhat.com/browse/RHEL-20386
+  Resolves: https://issues.redhat.com/browse/RHEL-21193
+  Resolves: https://issues.redhat.com/browse/RHEL-21200
+
+* Thu Dec 14 2023 José Expósito <jexposit@redhat.com> - 1.20.11-22
+- CVE fix for: CVE-2023-6377, CVE-2023-6478
+  Resolves: https://issues.redhat.com/browse/RHEL-18322
+  Resolves: https://issues.redhat.com/browse/RHEL-18329
+
+* Wed Oct 25 2023 José Expósito <jexposit@redhat.com> - 1.20.11-20
+- CVE fix for: CVE-2023-5380
+  Resolves: https://issues.redhat.com/browse/RHEL-14062
+
+* Wed Oct 25 2023 José Expósito <jexposit@redhat.com> - 1.20.11-20
+- CVE fix for: CVE-2023-5367
+  Resolves: https://issues.redhat.com/browse/RHEL-13430
+
 * Tue Jun  6 2023 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-19
 - Backport fix for a deadlock with DRI3
   Resolves: rhbz#2192550
