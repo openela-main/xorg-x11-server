@@ -1,0 +1,33 @@
+From 133e0d651c5d12bf01999d6289e84e224ba77adc Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Mon, 22 Jan 2024 14:22:12 +1000
+Subject: [PATCH] dix: fix valuator copy/paste error in the DeviceStateNotify
+ event
+
+Fixes 219c54b8a3337456ce5270ded6a67bcde53553d5
+---
+ dix/enterleave.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/dix/enterleave.c b/dix/enterleave.c
+index 7b7ba1098..c1e6ac600 100644
+--- a/dix/enterleave.c
++++ b/dix/enterleave.c
+@@ -619,11 +619,11 @@ FixDeviceValuator(DeviceIntPtr dev, deviceValuator * ev, ValuatorClassPtr v,
+     ev->first_valuator = first;
+     switch (ev->num_valuators) {
+     case 6:
+-        ev->valuator2 = v->axisVal[first + 5];
++        ev->valuator5 = v->axisVal[first + 5];
+     case 5:
+-        ev->valuator2 = v->axisVal[first + 4];
++        ev->valuator4 = v->axisVal[first + 4];
+     case 4:
+-        ev->valuator2 = v->axisVal[first + 3];
++        ev->valuator3 = v->axisVal[first + 3];
+     case 3:
+         ev->valuator2 = v->axisVal[first + 2];
+     case 2:
+-- 
+2.44.0
+
