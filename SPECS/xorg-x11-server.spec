@@ -46,7 +46,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   23%{?gitdate:.%{gitdate}}%{?dist}
+Release:   24%{?gitdate:.%{gitdate}}%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X
@@ -187,6 +187,7 @@ Patch10046: 0002-Xi-ProcXIPassiveGrabDevice-needs-to-use-unswapped-le.patch
 Patch10047: 0003-Xquartz-ProcAppleDRICreatePixmap-needs-to-use-unswap.patch
 # CVE-2024-31083
 Patch10048: 0004-render-fix-refcounting-of-glyphs-during-ProcRenderAd.patch
+Patch10049: 0001-render-Avoid-possible-double-free-in-ProcRenderAddGl.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -615,13 +616,16 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
-* Thu Apr 04 2024 José Expósito <jexposit@redhat.com> - 1.20.14-23
+* Wed Apr 10 2024 José Expósito <jexposit@redhat.com> - 1.20.11-24
+- Fix regression caused by the fix for CVE-2024-31083
+
+* Thu Apr 04 2024 José Expósito <jexposit@redhat.com> - 1.20.11-23
 - CVE fix for: CVE-2024-31080, CVE-2024-31081, CVE-2024-31082 and
   CVE-2024-31083
 - Add util-linux as a dependency of Xvfb
 - Fix compilation error on i686
 
-* Thu Jan 18 2024 José Expósito <jexposit@redhat.com> - 1.20.4-24
+* Thu Jan 18 2024 José Expósito <jexposit@redhat.com> - 1.20.11-22
 - Fix use after free related to CVE-2024-21886
 
 * Tue Jan 16 2024 José Expósito <jexposit@redhat.com> - 1.20.11-21
