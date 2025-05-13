@@ -1,0 +1,30 @@
+From a7ba1e9fe41019296a0f3ddff3d681f77e041ad7 Mon Sep 17 00:00:00 2001
+From: Olivier Fourdan <ofourdan@redhat.com>
+Date: Tue, 7 May 2024 18:04:02 +0200
+Subject: [PATCH] xquartz: Remove invalid Unicode sequence
+
+This is flagged by the automatic scanning tools.
+
+Signed-off-by: Olivier Fourdan <ofourdan@redhat.com>
+Closes: https://gitlab.freedesktop.org/xorg/xserver/-/issues/1673
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/1524>
+---
+ hw/xquartz/bundle/Resources/he.lproj/main.nib/designable.nib | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xquartz/bundle/Resources/he.lproj/main.nib/designable.nib b/hw/xquartz/bundle/Resources/he.lproj/main.nib/designable.nib
+index e56c1adbc..42042a18d 100644
+--- a/hw/xquartz/bundle/Resources/he.lproj/main.nib/designable.nib
++++ b/hw/xquartz/bundle/Resources/he.lproj/main.nib/designable.nib
+@@ -438,7 +438,7 @@
+                                                 <menu key="menu" title="OtherViews" id="380">
+                                                     <items>
+                                                         <menuItem title="מהצג" state="on" tag="-1" id="384"/>
+-                                                        <menuItem title="‭?‬256‮ ‬צבעים" tag="8" id="435"/>
++                                                        <menuItem title="‭‬צבעים" tag="8" id="435"/>
+                                                         <menuItem title="‏אלפים" tag="15" id="383"/>
+                                                         <menuItem title="‏מיליונים" tag="24" id="381"/>
+                                                     </items>
+-- 
+2.45.0
+
