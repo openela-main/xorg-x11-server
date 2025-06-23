@@ -46,7 +46,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   25%{?gitdate:.%{gitdate}}%{?dist}
+Release:   26%{?gitdate:.%{gitdate}}%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X
@@ -190,6 +190,18 @@ Patch10048: 0004-render-fix-refcounting-of-glyphs-during-ProcRenderAd.patch
 Patch10049: 0001-render-Avoid-possible-double-free-in-ProcRenderAddGl.patch
 # CVE-2024-9632
 Patch10050: 0001-xkb-Fix-buffer-overflow-in-_XkbSetCompatMap.patch
+# CVE-2025-49175: Out-of-bounds access in X Rendering extension
+Patch10051: 0001-render-Avoid-0-or-less-animated-cursors.patch
+# CVE-2025-49176: Integer overflow in Big Requests Extension
+Patch10052: 0002-os-Do-not-overflow-the-integer-size-with-BigRequest.patch
+Patch10053: 0003-os-Check-for-integer-overflow-on-BigRequest-length.patch
+# CVE-2025-49178: Unprocessed client request via bytes to ignore
+Patch10054: 0004-os-Account-for-bytes-to-ignore-when-sharing-input-bu.patch
+# CVE-2025-49179: Integer overflow in X Record extension
+Patch10055: 0005-record-Check-for-overflow-in-RecordSanityCheckRegist.patch
+# CVE-2025-49180: Integer overflow in RandR extension
+Patch10056: 0006-randr-Check-for-overflow-in-RRChangeProviderProperty.patch
+Patch10057: 0007-xfree86-Check-for-RandR-provider-functions.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -618,6 +630,11 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Wed Jun 18 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-26
+- CVE fix for: CVE-2025-49175 (RHEL-97273), CVE-2025-49176 (RHEL-97329),
+               CVE-2025-49178 (RHEL-97369), CVE-2025-49179 (RHEL-97422),
+               CVE-2025-49180 (RHEL-97235)
+
 * Tue Oct 29 2024 José Expósito <jexposit@redhat.com> - 1.20.11-25
 - CVE fix for CVE-2024-9632
 
