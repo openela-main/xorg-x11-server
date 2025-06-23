@@ -1,0 +1,63 @@
+From 0d93bbfa2cfacbb73741f8bed0e32fa1a656b928 Mon Sep 17 00:00:00 2001
+From: Povilas Kanapickas <povilas@radix.lt>
+Date: Fri, 26 Mar 2021 00:51:02 +0200
+Subject: [PATCH xserver] xfree86: Fix potentially NULL reference to platform
+ device's PCI device
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+xf86_platform_devices[i].pdev may be NULL in cases we fail to parse the
+busid in config_udev_odev_setup_attribs() (see also [1], [2]) such as
+when udev does not give use ID_PATH. This in turn leads to
+platform_find_pci_info() being not called and pdev being NULL.
+
+[1]: https://gitlab.freedesktop.org/xorg/xserver/-/issues/993
+[2]: https://gitlab.freedesktop.org/xorg/xserver/-/issues/1076
+
+Reviewed-by: Zoltán Böszörményi <zboszor@gmail.com>
+Signed-off-by: Povilas Kanapickas <povilas@radix.lt>
+Signed-off-by: Michel Dänzer <michel@daenzer.net>
+---
+ hw/xfree86/common/xf86platformBus.c        | 10 ++++++----
+ hw/xfree86/os-support/linux/lnx_platform.c |  3 +++
+ 2 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/hw/xfree86/common/xf86platformBus.c b/hw/xfree86/common/xf86platformBus.c
+index ee2f3f86a..e43ff69af 100644
+--- a/hw/xfree86/common/xf86platformBus.c
++++ b/hw/xfree86/common/xf86platformBus.c
+@@ -365,10 +365,12 @@ xf86MergeOutputClassOptions(int entityIndex, void **options)
+         break;
+     case BUS_PCI:
+         for (i = 0; i < xf86_num_platform_devices; i++) {
+-            if (MATCH_PCI_DEVICES(xf86_platform_devices[i].pdev,
+-                                  entity->bus.id.pci)) {
+-                dev = &xf86_platform_devices[i];
+-                break;
++            if (xf86_platform_devices[i].pdev) {
++                if (MATCH_PCI_DEVICES(xf86_platform_devices[i].pdev,
++                                      entity->bus.id.pci)) {
++                    dev = &xf86_platform_devices[i];
++                    break;
++                }
+             }
+         }
+         break;
+diff --git a/hw/xfree86/os-support/linux/lnx_platform.c b/hw/xfree86/os-support/linux/lnx_platform.c
+index fe2142182..8a6be97aa 100644
+--- a/hw/xfree86/os-support/linux/lnx_platform.c
++++ b/hw/xfree86/os-support/linux/lnx_platform.c
+@@ -85,6 +85,9 @@ xf86PlatformDeviceCheckBusID(struct xf86_platform_device *device, const char *bu
+     bustype = StringToBusType(busid, &id);
+     if (bustype == BUS_PCI) {
+         struct pci_device *pPci = device->pdev;
++        if (!pPci)
++            return FALSE;
++
+         if (xf86ComparePciBusString(busid,
+                                     ((pPci->domain << 8)
+                                      | pPci->bus),
+-- 
+2.49.0
+

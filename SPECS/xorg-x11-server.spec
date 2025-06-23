@@ -42,7 +42,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   28%{?gitdate:.%{gitdate}}%{?dist}
+Release:   31%{?gitdate:.%{gitdate}}%{?dist}
 URL:       http://www.x.org
 License:   MIT
 
@@ -121,6 +121,11 @@ Patch112: 0001-present-Check-for-NULL-to-prevent-crash.patch
 Patch113: 0001-modesetting-Fix-msSharePixmapBacking-Segfault-Regres.patch
 Patch114: 0001-present-Send-a-PresentConfigureNotify-event-for-dest.patch
 Patch115: 0001-xquartz-Remove-invalid-Unicode-sequence.patch
+# https://issues.redhat.com/browse/RHEL-84436
+# https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/1070
+Patch116: 0001-dix-Force-update-LEDs-after-device-state-update-in-E.patch
+# https://issues.redhat.com/browse/RHEL-88187
+Patch117: 0001-xfree86-Fix-potentially-NULL-reference-to-platform-d.patch
 
 # CVE-2021-4011
 Patch10009: 0001-record-Fix-out-of-bounds-access-in-SwapCreateRegiste.patch
@@ -221,6 +226,18 @@ Patch10060: 0010-sync-Do-not-let-sync-objects-uninitialized.patch
 Patch10061: 0011-sync-Check-values-before-applying-changes.patch
 Patch10062: 0012-sync-Do-not-fail-SyncAddTriggerToSyncObject.patch
 Patch10063: 0013-sync-Apply-changes-last-in-SyncChangeAlarmAttributes.patch
+# CVE-2025-49175: Out-of-bounds access in X Rendering extension
+Patch10064: 0001-render-Avoid-0-or-less-animated-cursors.patch
+# CVE-2025-49176: Integer overflow in Big Requests Extension
+Patch10065: 0002-os-Do-not-overflow-the-integer-size-with-BigRequest.patch
+Patch10066: 0003-os-Check-for-integer-overflow-on-BigRequest-length.patch
+# CVE-2025-49178: Unprocessed client request via bytes to ignore
+Patch10067: 0004-os-Account-for-bytes-to-ignore-when-sharing-input-bu.patch
+# CVE-2025-49179: Integer overflow in X Record extension
+Patch10068: 0005-record-Check-for-overflow-in-RecordSanityCheckRegist.patch
+# CVE-2025-49180: Integer overflow in RandR extension
+Patch10069: 0006-randr-Check-for-overflow-in-RRChangeProviderProperty.patch
+Patch10070: 0007-xfree86-Check-for-RandR-provider-functions.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -631,6 +648,19 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Wed Jun 18 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-31
+- CVE fix for: CVE-2025-49175 (RHEL-97289), CVE-2025-49176 (RHEL-97311),
+               CVE-2025-49178 (RHEL-97388), CVE-2025-49179 (RHEL-97410),
+               CVE-2025-49180 (RHEL-97255)
+
+* Tue Apr 22 2025 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-30
+- xfree86: Fix potentially NULL reference to platform device's PCI device
+  Resolves: https://issues.redhat.com/browse/RHEL-88187
+
+* Fri Mar 21 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-29
+- Fix LEDs state after suspend/resume
+  Resolves: https://issues.redhat.com/browse/RHEL-84436
+
 * Wed Feb 26 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-28
 - CVE fix for: CVE-2025-26594 (RHEL-79125), CVE-2025-26595 (RHEL-79129),
                CVE-2025-26596 (RHEL-79133), CVE-2025-26597 (RHEL-79137),
