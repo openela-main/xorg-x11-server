@@ -46,7 +46,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   26%{?gitdate:.%{gitdate}}%{?dist}
+Release:   27%{?gitdate:.%{gitdate}}%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X
@@ -202,6 +202,13 @@ Patch10055: 0005-record-Check-for-overflow-in-RecordSanityCheckRegist.patch
 # CVE-2025-49180: Integer overflow in RandR extension
 Patch10056: 0006-randr-Check-for-overflow-in-RRChangeProviderProperty.patch
 Patch10057: 0007-xfree86-Check-for-RandR-provider-functions.patch
+# CVE-2025-62229: Use-after-free in XPresentNotify structures creation
+Patch10058: 0001-present-Fix-use-after-free-in-present_create_notifie.patch
+# CVE-2025-62230: Use-after-free in Xkb client resource removal
+Patch10059: 0002-xkb-Make-the-RT_XKBCLIENT-resource-private.patch
+Patch10060: 0003-xkb-Free-the-XKB-resource-when-freeing-XkbInterest.patch
+# CVE-2025-62231: Value overflow in Xkb extension XkbSetCompatMap()
+Patch10061: 0004-xkb-Prevent-overflow-in-XkbSetCompatMap.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -630,6 +637,10 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Thu Oct 30 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-27
+- CVE fix for: CVE-2025-62229 (RHEL-119953), CVE-2025-62230 (RHEL-120027),
+               CVE-2025-62231 (RHEL-124993)
+
 * Wed Jun 18 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-26
 - CVE fix for: CVE-2025-49175 (RHEL-97273), CVE-2025-49176 (RHEL-97329),
                CVE-2025-49178 (RHEL-97369), CVE-2025-49179 (RHEL-97422),
