@@ -121,10 +121,10 @@ Patch112: 0001-present-Check-for-NULL-to-prevent-crash.patch
 Patch113: 0001-modesetting-Fix-msSharePixmapBacking-Segfault-Regres.patch
 Patch114: 0001-present-Send-a-PresentConfigureNotify-event-for-dest.patch
 Patch115: 0001-xquartz-Remove-invalid-Unicode-sequence.patch
-# https://issues.redhat.com/browse/RHEL-84436
+# https://issues.redhat.com/browse/RHEL-82085
 # https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/1070
 Patch116: 0001-dix-Force-update-LEDs-after-device-state-update-in-E.patch
-# https://issues.redhat.com/browse/RHEL-88187
+# https://issues.redhat.com/browse/RHEL-84253
 Patch117: 0001-xfree86-Fix-potentially-NULL-reference-to-platform-d.patch
 
 # CVE-2021-4011
@@ -656,27 +656,27 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 %changelog
 * Thu Oct 30 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-32
-- CVE fix for: CVE-2025-62229 (RHEL-119961), CVE-2025-62230 (RHEL-120032),
-               CVE-2025-62231 (RHEL-125001)
+- CVE fix for: CVE-2025-62229 (RHEL-119960), CVE-2025-62230 (RHEL-120033),
+               CVE-2025-62231 (RHEL-125002)
 
 * Wed Jun 18 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-31
-- CVE fix for: CVE-2025-49175 (RHEL-97289), CVE-2025-49176 (RHEL-97311),
-               CVE-2025-49178 (RHEL-97388), CVE-2025-49179 (RHEL-97410),
-               CVE-2025-49180 (RHEL-97255)
+- CVE fix for: CVE-2025-49175 (RHEL-97285), CVE-2025-49176 (RHEL-97308),
+               CVE-2025-49178 (RHEL-97387), CVE-2025-49179 (RHEL-97409),
+               CVE-2025-49180 (RHEL-97253)
 
 * Tue Apr 22 2025 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-30
 - xfree86: Fix potentially NULL reference to platform device's PCI device
-  Resolves: https://issues.redhat.com/browse/RHEL-88187
+  Resolves: https://issues.redhat.com/browse/RHEL-84253
 
 * Fri Mar 21 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-29
 - Fix LEDs state after suspend/resume
-  Resolves: https://issues.redhat.com/browse/RHEL-84436
+  Resolves: https://issues.redhat.com/browse/RHEL-82085
 
 * Wed Feb 26 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-28
-- CVE fix for: CVE-2025-26594 (RHEL-79125), CVE-2025-26595 (RHEL-79129),
-               CVE-2025-26596 (RHEL-79133), CVE-2025-26597 (RHEL-79137),
-               CVE-2025-26598 (RHEL-79138), CVE-2025-26599 (RHEL-79143),
-               CVE-2025-26600 (RHEL-79153), CVE-2025-26601 (RHEL-79149)
+- CVE fix for: CVE-2025-26594 (RHEL-80201), CVE-2025-26595 (RHEL-80186),
+               CVE-2025-26596 (RHEL-80188), CVE-2025-26597 (RHEL-80191),
+               CVE-2025-26598 (RHEL-80192), CVE-2025-26599 (RHEL-80199),
+               CVE-2025-26600 (RHEL-80198), CVE-2025-26601 (RHEL-80200)
 
 * Tue Oct 29 2024 José Expósito <jexposit@redhat.com> - 1.20.11-27
 - CVE fix for CVE-2024-9632
