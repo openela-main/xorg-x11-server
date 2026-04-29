@@ -46,7 +46,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   27%{?gitdate:.%{gitdate}}%{?dist}
+Release:   28%{?gitdate:.%{gitdate}}%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X
@@ -209,6 +209,17 @@ Patch10059: 0002-xkb-Make-the-RT_XKBCLIENT-resource-private.patch
 Patch10060: 0003-xkb-Free-the-XKB-resource-when-freeing-XkbInterest.patch
 # CVE-2025-62231: Value overflow in Xkb extension XkbSetCompatMap()
 Patch10061: 0004-xkb-Prevent-overflow-in-XkbSetCompatMap.patch
+# CVE-2026-33999: XKB Integer Underflow in XkbSetCompatMap()
+Patch10062: 0001-xkb-fix-buffer-re-use-in-_XkbSetCompatMap.patch
+# CVE-2026-34000: XKB Out-of-bounds Read in CheckSetGeom()
+Patch10063: 0002-xkb-Fix-bounds-check-in-_CheckSetGeom.patch
+# CVE-2026-34001: XSYNC Use-after-free in miSyncTriggerFence()
+Patch10064: 0003-miext-sync-Fix-use-after-free-in-miSyncTriggerFence.patch
+# CVE-2026-34002: XKB Out-of-bounds read in CheckModifierMap()
+Patch10065: 0004-xkb-Fix-out-of-bounds-read-in-CheckModifierMap.patch
+# CVE-2026-34003: XKB Buffer overflow in CheckKeyTypes()
+Patch10066: 0005-xkb-Add-additional-bound-checking-in-CheckKeyTypes.patch
+Patch10067: 0006-xkb-Add-more-_XkbCheckRequestBounds.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -637,6 +648,13 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Tue Apr 14 2026 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-28
+- CVE fix for: CVE-2026-33999, CVE-2026-34000, CVE-2026-34001
+               CVE-2026-34002, CVE-2026-34003
+  Resolves: https://redhat.atlassian.net/browse/RHEL-163216
+  Resolves: https://redhat.atlassian.net/browse/RHEL-163298
+  Resolves: https://redhat.atlassian.net/browse/RHEL-163229
+
 * Thu Oct 30 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-27
 - CVE fix for: CVE-2025-62229 (RHEL-119953), CVE-2025-62230 (RHEL-120027),
                CVE-2025-62231 (RHEL-124993)
