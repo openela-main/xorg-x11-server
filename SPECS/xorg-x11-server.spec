@@ -42,7 +42,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   33%{?gitdate:.%{gitdate}}%{?dist}
+Release:   34%{?gitdate:.%{gitdate}}%{?dist}
 URL:       http://www.x.org
 License:   MIT
 
@@ -666,16 +666,20 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
-* Tue Apr 14 2026 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-33
+* Tue Apr 14 2026 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-34
 - CVE fix for: CVE-2026-33999, CVE-2026-34000, CVE-2026-34001
                CVE-2026-34002, CVE-2026-34003
-  Resolves: https://redhat.atlassian.net/browse/RHEL-163225
-  Resolves: https://redhat.atlassian.net/browse/RHEL-163307
-  Resolves: https://redhat.atlassian.net/browse/RHEL-163238
+  Resolves: https://redhat.atlassian.net/browse/RHEL-163226
+  Resolves: https://redhat.atlassian.net/browse/RHEL-163308
+  Resolves: https://redhat.atlassian.net/browse/RHEL-163239
+
+* Wed Jan 14 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-33
+- Rebuild against xorg-x11-xtrans-devel 1.4.0-9
+  Resolves: RHEL-117509
 
 * Thu Oct 30 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-32
-- CVE fix for: CVE-2025-62229 (RHEL-119960), CVE-2025-62230 (RHEL-120033),
-               CVE-2025-62231 (RHEL-125002)
+- CVE fix for: CVE-2025-62229 (RHEL-119963), CVE-2025-62230 (RHEL-120035),
+               CVE-2025-62231 (RHEL-125003)
 
 * Wed Jun 18 2025 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-31
 - CVE fix for: CVE-2025-49175 (RHEL-97285), CVE-2025-49176 (RHEL-97308),
