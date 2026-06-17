@@ -1,0 +1,54 @@
+From 69599f57afd64ff1289dbbd29e5e108435b7ffc2 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 11 Oct 2025 16:16:12 -0700
+Subject: [PATCH xserver 20/51] dix: avoid null dereference if
+ wOtherInputMasks() returns NULL
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The wOtherInputMasks(win) macro will return NULL if
+win->optional is NULL.
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../dix/gestures.c:242:9:
+ warning[-Wanalyzer-null-dereference]: dereference of NULL ‘inputMasks’
+xwayland-24.1.6/redhat-linux-build/../dix/touch.c:765:9:
+ warning[-Wanalyzer-null-dereference]: dereference of NULL ‘inputMasks’
+xwayland-24.1.6/redhat-linux-build/../dix/touch.c:782:9:
+ warning[-Wanalyzer-null-dereference]: dereference of NULL ‘inputMasks’
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 15496a5e3d5407a2b480d8c726b012455f7898bb)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ dix/touch.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/dix/touch.c b/dix/touch.c
+index 37902bd05..5c5c21303 100644
+--- a/dix/touch.c
++++ b/dix/touch.c
+@@ -797,6 +797,8 @@ TouchAddRegularListener(DeviceIntPtr dev, TouchPointInfoPtr ti,
+     inputMasks = wOtherInputMasks(win);
+ 
+     if (mask & EVENT_XI2_MASK) {
++        BUG_RETURN_VAL(!inputMasks, FALSE);
++
+         nt_list_for_each_entry(iclients, inputMasks->inputClients, next) {
+             if (!xi2mask_isset(iclients->xi2mask, dev, evtype))
+                 continue;
+@@ -814,6 +816,8 @@ TouchAddRegularListener(DeviceIntPtr dev, TouchPointInfoPtr ti,
+         int xitype = GetXIType(TouchGetPointerEventType(ev));
+         Mask xi_filter = event_get_filter_from_type(dev, xitype);
+ 
++        BUG_RETURN_VAL(!inputMasks, FALSE);
++
+         nt_list_for_each_entry(iclients, inputMasks->inputClients, next) {
+             if (!(iclients->mask[dev->id] & xi_filter))
+                 continue;
+-- 
+2.54.0
+

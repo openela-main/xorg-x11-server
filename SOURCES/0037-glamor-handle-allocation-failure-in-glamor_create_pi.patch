@@ -1,0 +1,45 @@
+From 557660af8831f2395e40ad9019104d2119d3cb20 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 25 Oct 2025 16:27:34 -0700
+Subject: [PATCH xserver 37/51] glamor: handle allocation failure in
+ glamor_create_pixmap()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported by gcc 15.1:
+
+../glamor/glamor.c: In function ‘glamor_create_pixmap’:
+../glamor/glamor.c:233:23: warning: potential null pointer dereference
+ [-Wnull-dereference]
+  233 |     pixmap_priv->type = GLAMOR_TEXTURE_ONLY;
+      |     ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~
+../glamor/glamor.c:228:26: warning: potential null pointer dereference
+ [-Wnull-dereference]
+  228 |     pixmap_priv->is_cbcr = (GLAMOR_CREATE_FORMAT_CBCR & usage) == GLAMOR_CREATE_FORMAT_CBCR;
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit cc647f23679ae2beb7b971aa7d1203375c25bb55)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ glamor/glamor.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/glamor/glamor.c b/glamor/glamor.c
+index 236c45d6d..01fb3ac80 100644
+--- a/glamor/glamor.c
++++ b/glamor/glamor.c
+@@ -220,6 +220,9 @@ glamor_create_pixmap(ScreenPtr screen, int w, int h, int depth,
+     else
+         pixmap = fbCreatePixmap(screen, 0, 0, depth, usage);
+ 
++    if (!pixmap)
++        return NullPixmap;
++
+     pixmap_priv = glamor_get_pixmap_private(pixmap);
+ 
+     format = gl_iformat_for_pixmap(pixmap);
+-- 
+2.54.0
+

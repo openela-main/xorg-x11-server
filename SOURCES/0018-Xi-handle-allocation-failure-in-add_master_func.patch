@@ -1,0 +1,39 @@
+From d3db315eb5fff0933c16e772081754ee02b48938 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 5 Oct 2025 17:52:39 -0700
+Subject: [PATCH xserver 18/51] Xi: handle allocation failure in
+ add_master_func()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../Xi/xibarriers.c:729:5:
+ warning[-Wanalyzer-null-dereference]:
+ dereference of NULL ‘AllocBarrierDevice()’
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 0ee603905387e00a2e3d83ead1de99ca61d641fb)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xi/xibarriers.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Xi/xibarriers.c b/Xi/xibarriers.c
+index cb336f22b..ad82852fe 100644
+--- a/Xi/xibarriers.c
++++ b/Xi/xibarriers.c
+@@ -726,6 +726,8 @@ static void add_master_func(void *res, XID id, void *devid)
+ 
+ 
+     pbd = AllocBarrierDevice();
++    if (!pbd)
++        return;
+     pbd->deviceid = *deviceid;
+ 
+     input_lock();
+-- 
+2.54.0
+

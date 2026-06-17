@@ -1,0 +1,49 @@
+From 77d1f03ec166c3c4e12b05dd51aa0ad41d18694c Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Fri, 19 Dec 2025 17:10:43 -0800
+Subject: [PATCH xserver 33/51] os: make FormatInt64() handle LONG_MIN
+ correctly
+
+When compiling with gcc 15.2.0 using -O3 -m64 on Solaris SPARC & x64,
+we'd get a test failure of:
+
+Assertion failed: strcmp(logmsg, expected) == 0,
+ file ../test/signal-logging.c, line 339, function logging_format
+
+because 'num *= 1' produced a value that was out of the range of the
+int64_t it was being stored in.  (Compiling with -O2 worked fine with
+the same compiler/configuration/platform though.)
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 7f68b588657ea14050971efa86682e55e2c7e21b)
+(cherry picked from commit 3eac9393d734a1aa8342179f98e30569da70db95)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ os/utils.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/os/utils.c b/os/utils.c
+index 0a9f36fcd..7130c27aa 100644
+--- a/os/utils.c
++++ b/os/utils.c
+@@ -2084,12 +2084,14 @@ xstrtokenize(const char *str, const char *separators)
+ void
+ FormatInt64(int64_t num, char *string)
+ {
++    uint64_t unum = num;
++
+     if (num < 0) {
+         string[0] = '-';
+-        num *= -1;
++        unum = num * -1;
+         string++;
+     }
+-    FormatUInt64(num, string);
++    FormatUInt64(unum, string);
+ }
+ 
+ /* Format a number into a string in a signal safe manner. The string should be
+-- 
+2.54.0
+

@@ -1,0 +1,49 @@
+From 90358719e7eec514929256d3cf75f2dbe132f97d Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 2 Nov 2025 12:16:56 -0800
+Subject: [PATCH xserver 42/51] glamor: avoid double free in
+ glamor_make_pixmap_exportable()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported by gcc 15.1:
+
+../glamor/glamor_egl.c:320:9:
+ warning: double-‘free’ of ‘modifiers’ [CWE-415] [-Wanalyzer-double-free]
+[...]
+           │  732 |│        free(*modifiers);
+           │      |│        ~~~~~~~~~~~~~~~~
+           │      |│        |
+           │      |└───────>(25) ...to here
+           │      |         (26) first ‘free’ here
+[...]
+    │  320 |         free(modifiers);
+    │      |         ~~~~~~~~~~~~~~~
+    │      |         |
+    │      |         (28) ⚠️  second ‘free’ here; first ‘free’ was at (26)
+
+Fixes: cef12efc1 ("glamor: Implement GetSupportedModifiers")
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 3e9baa20f39b0502efdaf48c2ca7e2f58d1e3120)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ glamor/glamor_egl.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/glamor/glamor_egl.c b/glamor/glamor_egl.c
+index 4120c2e7d..3687eb675 100644
+--- a/glamor/glamor_egl.c
++++ b/glamor/glamor_egl.c
+@@ -680,6 +680,7 @@ glamor_get_modifiers(ScreenPtr screen, uint32_t format,
+     if (!eglQueryDmaBufModifiersEXT(glamor_egl->display, format, num,
+                                     (EGLuint64KHR *) *modifiers, NULL, &num)) {
+         free(*modifiers);
++        *modifiers = NULL;
+         return FALSE;
+     }
+ 
+-- 
+2.54.0
+

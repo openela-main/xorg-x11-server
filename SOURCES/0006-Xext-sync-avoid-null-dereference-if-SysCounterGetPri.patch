@@ -1,0 +1,90 @@
+From 03aeaee358fc6a34a851f875d37df405240879c1 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 4 Oct 2025 15:26:19 -0700
+Subject: [PATCH xserver 06/51] Xext/sync: avoid null dereference if
+ SysCounterGetPrivate() returns NULL
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../Xext/sync.c:2664:9: danger: dereference of NULL ‘SysCounterGetPrivate(pCounter)’
+# 2662|           SyncCounter *counter = pCounter;
+# 2663|           IdleCounterPriv *priv = SysCounterGetPrivate(counter);
+# 2664|->         deviceid = priv->deviceid;
+# 2665|       }
+# 2666|       else
+
+xwayland-24.1.6/redhat-linux-build/../Xext/sync.c:2677:14: danger: dereference of NULL ‘SysCounterGetPrivate(pCounter)’
+# 2675|       SyncCounter *counter = pCounter;
+# 2676|       IdleCounterPriv *priv = SysCounterGetPrivate(counter);
+# 2677|->     int64_t *less = priv->value_less;
+# 2678|       int64_t *greater = priv->value_greater;
+# 2679|       int64_t idle, old_idle;
+
+xwayland-24.1.6/redhat-linux-build/../Xext/sync.c:2767:14: danger: dereference of NULL ‘SysCounterGetPrivate(pCounter)’
+# 2765|       SyncCounter *counter = pCounter;
+# 2766|       IdleCounterPriv *priv = SysCounterGetPrivate(counter);
+# 2767|->     int64_t *less = priv->value_less;
+# 2768|       int64_t *greater = priv->value_greater;
+# 2769|       int64_t idle;
+
+xwayland-24.1.6/redhat-linux-build/../Xext/sync.c:2800:14: danger: dereference of NULL ‘SysCounterGetPrivate(pCounter)’
+# 2798|       SyncCounter *counter = pCounter;
+# 2799|       IdleCounterPriv *priv = SysCounterGetPrivate(counter);
+# 2800|->     int64_t *less = priv->value_less;
+# 2801|       int64_t *greater = priv->value_greater;
+# 2802|       Bool registered = (less || greater);
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 0211de37b340eccfc0bad6a3ea13b27810b11a30)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xext/sync.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/Xext/sync.c b/Xext/sync.c
+index c3d160327..09a14ac3c 100644
+--- a/Xext/sync.c
++++ b/Xext/sync.c
+@@ -2695,9 +2695,11 @@ IdleTimeQueryValue(void *pCounter, int64_t *pValue_return)
+     int deviceid;
+     CARD32 idle;
+ 
++    *pValue_return = 0;
+     if (pCounter) {
+         SyncCounter *counter = pCounter;
+         IdleCounterPriv *priv = SysCounterGetPrivate(counter);
++        BUG_RETURN(priv == NULL);
+         deviceid = priv->deviceid;
+     }
+     else
+@@ -2711,6 +2713,7 @@ IdleTimeBlockHandler(void *pCounter, void *wt)
+ {
+     SyncCounter *counter = pCounter;
+     IdleCounterPriv *priv = SysCounterGetPrivate(counter);
++    BUG_RETURN(priv == NULL);
+     int64_t *less = priv->value_less;
+     int64_t *greater = priv->value_greater;
+     int64_t idle, old_idle;
+@@ -2801,6 +2804,7 @@ IdleTimeWakeupHandler(void *pCounter, int rc)
+ {
+     SyncCounter *counter = pCounter;
+     IdleCounterPriv *priv = SysCounterGetPrivate(counter);
++    BUG_RETURN(priv == NULL);
+     int64_t *less = priv->value_less;
+     int64_t *greater = priv->value_greater;
+     int64_t idle;
+@@ -2834,6 +2838,7 @@ IdleTimeBracketValues(void *pCounter, int64_t *pbracket_less,
+ {
+     SyncCounter *counter = pCounter;
+     IdleCounterPriv *priv = SysCounterGetPrivate(counter);
++    BUG_RETURN(priv == NULL);
+     int64_t *less = priv->value_less;
+     int64_t *greater = priv->value_greater;
+     Bool registered = (less || greater);
+-- 
+2.54.0
+

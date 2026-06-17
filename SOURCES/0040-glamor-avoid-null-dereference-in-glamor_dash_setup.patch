@@ -1,0 +1,38 @@
+From b04a54c567eb0f31bc7d58e47d1adf6b04b3c981 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Tue, 28 Oct 2025 18:16:00 -0700
+Subject: [PATCH xserver 40/51] glamor: avoid null dereference in
+ glamor_dash_setup()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../glamor/glamor_dash.c:152:10:
+ warning[-Wanalyzer-null-dereference]: dereference of NULL ‘0’
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit c6522229b86f9087347b17280b6e5f19345baf9a)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ glamor/glamor_dash.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/glamor/glamor_dash.c b/glamor/glamor_dash.c
+index b53ce5c50..ec8bf36bf 100644
+--- a/glamor/glamor_dash.c
++++ b/glamor/glamor_dash.c
+@@ -149,7 +149,7 @@ glamor_dash_setup(DrawablePtr drawable, GCPtr gc)
+     dash_pixmap = glamor_get_dash_pixmap(gc);
+     dash_priv = glamor_get_pixmap_private(dash_pixmap);
+ 
+-    if (!GLAMOR_PIXMAP_PRIV_HAS_FBO(dash_priv))
++    if (!dash_priv || !GLAMOR_PIXMAP_PRIV_HAS_FBO(dash_priv))
+         goto bail;
+ 
+     glamor_make_current(glamor_priv);
+-- 
+2.54.0
+

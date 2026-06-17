@@ -1,0 +1,31 @@
+From aa5e76a3983061b9471334b3619d207b41d91d13 Mon Sep 17 00:00:00 2001
+From: Twaik Yont <9674930+twaik@users.noreply.github.com>
+Date: Thu, 10 Apr 2025 17:55:58 +0300
+Subject: [PATCH xserver 34/51] os: use close-on-exec for X server socket to
+ prevent fd leaks
+
+In most typical Linux X servers (like Xvfb, Xephyr, or Xwayland), no child process outlives the server, so this issue rarely arises. However, in embedded X servers (based on Xvfb or Kdrive) or in custom Xorg modules, the server might launch a long-running command with regular fork+exec calls. If the X server crashes or exits while that command is still running (for example, it spawns a tombstone generator or any process that hangs or turns to zombie), the file descriptor associated with the abstract socket can remain open in the child process. This leads to the kernel refusing to allow another X server to bind the same socket until the child process terminates (because there is no explicit way to unlink abstract socket, unlike Unix socket). By marking the file descriptor as close-on-exec, we ensure it is automatically closed in child processes, preserving the ability of a new X server process to bind the socket immediately.
+
+Signed-off-by: Twaik Yont <9674930+twaik@users.noreply.github.com>
+(cherry picked from commit 5568b0f83f388a295f42d49411ced17387043794)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ os/connection.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/os/connection.c b/os/connection.c
+index 32d2cda2a..406f8763e 100644
+--- a/os/connection.c
++++ b/os/connection.c
+@@ -283,6 +283,7 @@ CreateWellKnownSockets(void)
+         int fd = _XSERVTransGetConnectionNumber(ListenTransConns[i]);
+ 
+         ListenTransFds[i] = fd;
++        _XSERVTransSetOption(ListenTransConns[i], TRANS_CLOSEONEXEC, 0);
+         SetNotifyFd(fd, QueueNewConnections, X_NOTIFY_READ, NULL);
+ 
+         if (!_XSERVTransIsLocal(ListenTransConns[i]))
+-- 
+2.54.0
+

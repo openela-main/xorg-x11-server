@@ -1,0 +1,43 @@
+From 70c8842c14764e0cfb343cbe4c29acfedb4b0bc3 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 4 Oct 2025 12:18:49 -0700
+Subject: [PATCH xserver 05/51] Xext/shm: avoid null dereference in
+ ShmInitScreenPriv()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../Xext/shm.c:213:23: acquire_memory: this call could return NULL
+xwayland-24.1.6/redhat-linux-build/../Xext/shm.c:214:9: danger: ‘screen_priv’ could be NULL: unchecked value from [(19)](sarif:/runs/0/results/0/codeFlows/0/threadFlows/0/locations/18)
+#  212|       if (!screen_priv) {
+#  213|           screen_priv = calloc(1, sizeof(ShmScrPrivateRec));
+#  214|->         screen_priv->CloseScreen = pScreen->CloseScreen;
+#  215|           dixSetPrivate(&pScreen->devPrivates, shmScrPrivateKey, screen_priv);
+#  216|           pScreen->CloseScreen = ShmCloseScreen;
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 87e53afd9c7f52a8fa3d1fed22db5380742cc7b7)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xext/shm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Xext/shm.c b/Xext/shm.c
+index 24c6b1087..2b23a15fe 100644
+--- a/Xext/shm.c
++++ b/Xext/shm.c
+@@ -210,7 +210,7 @@ ShmInitScreenPriv(ScreenPtr pScreen)
+     ShmScrPrivateRec *screen_priv = ShmGetScreenPriv(pScreen);
+ 
+     if (!screen_priv) {
+-        screen_priv = calloc(1, sizeof(ShmScrPrivateRec));
++        screen_priv = XNFcallocarray(1, sizeof(ShmScrPrivateRec));
+         screen_priv->CloseScreen = pScreen->CloseScreen;
+         dixSetPrivate(&pScreen->devPrivates, shmScrPrivateKey, screen_priv);
+         pScreen->CloseScreen = ShmCloseScreen;
+-- 
+2.54.0
+

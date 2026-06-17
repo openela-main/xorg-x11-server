@@ -1,0 +1,38 @@
+From 63511dd097c5ff8e57f34c4f8b0af8e441c0ac3c Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 4 Oct 2025 17:19:05 -0700
+Subject: [PATCH xserver 11/51] Xext/xselinux: add fast path to
+ ProcSELinuxListSelections()
+
+If there's nothing to send, skip over a bunch of code to make a list
+that won't be used, and hopefully make the code path clearer to both
+humans and static analyzers, who raise errors as seen in #1817 of
+dereferencing NULL pointers when count == 0.
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit d34243606c8d7a01108827ad1ca3216bf81a119d)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xext/xselinux_ext.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Xext/xselinux_ext.c b/Xext/xselinux_ext.c
+index 1395a563b..9784dca4e 100644
+--- a/Xext/xselinux_ext.c
++++ b/Xext/xselinux_ext.c
+@@ -452,8 +452,10 @@ ProcSELinuxListSelections(ClientPtr client)
+     count = 0;
+     for (pSel = CurrentSelections; pSel; pSel = pSel->next)
+         count++;
++    if (count == 0)
++        return SELinuxSendItemsToClient(client, NULL, 0, 0);
+     items = calloc(count, sizeof(SELinuxListItemRec));
+-    if (count && !items)
++    if (!items)
+         return BadAlloc;
+ 
+     /* Fill in the items and calculate size */
+-- 
+2.54.0
+

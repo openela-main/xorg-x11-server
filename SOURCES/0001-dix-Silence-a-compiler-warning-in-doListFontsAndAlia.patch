@@ -1,0 +1,45 @@
+From e710e570b1709d100072a8ab7d05c2aefaf41a1b Mon Sep 17 00:00:00 2001
+From: Olivier Fourdan <ofourdan@redhat.com>
+Date: Mon, 15 Jun 2026 14:00:19 +0200
+Subject: [PATCH xserver] dix: Silence a compiler warning in
+ doListFontsAndAliases()
+
+Compiler complains that "resolvedlen" might be uninitialized:
+
+| dix/dixfonts.c:559:5: var_decl: Declaring variable "resolvedlen" without initializer.
+| dix/dixfonts.c:674:17: uninit_use: Using uninitialized value "resolvedlen".
+|    672|                    * is complete.
+|    673|                    */
+|    674|->                 if (resolvedlen > XLFDMAXFONTNAMELEN) {
+|    675|                       err = BadFontName;
+|    676|                       goto ContBadFontName;
+
+Most likely a false positive, while immediately after the (newly added)
+test, there was a memcpy() using "resolvedlen" and the compiler did not
+choke on that before.
+
+Either way, initializing "resolvedlen" to 0 is a small price to pay to
+silence the compiler warning and keep us on the safe side.
+
+Signed-off-by: Olivier Fourdan <ofourdan@redhat.com>
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2237>
+---
+ dix/dixfonts.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dix/dixfonts.c b/dix/dixfonts.c
+index 3c6c9d594..cf2b45d4f 100644
+--- a/dix/dixfonts.c
++++ b/dix/dixfonts.c
+@@ -556,7 +556,7 @@ doListFontsAndAliases(ClientPtr client, LFclosurePtr c)
+     int err = Successful;
+     FontNamesPtr names = NULL;
+     char *name, *resolved = NULL;
+-    int namelen, resolvedlen;
++    int namelen, resolvedlen = 0;
+     int nnames;
+     int stringLens;
+     int i;
+-- 
+2.54.0
+

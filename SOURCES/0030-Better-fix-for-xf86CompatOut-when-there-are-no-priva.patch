@@ -1,0 +1,37 @@
+From c739165b8d2782ea9059494c482aa1854dfb74f3 Mon Sep 17 00:00:00 2001
+From: Matthieu Herrb <matthieu@herrb.eu>
+Date: Sun, 5 Dec 2021 21:59:12 +0100
+Subject: [PATCH xserver 30/51] Better fix for xf86CompatOut() when there are
+ no privates
+
+XF86_CRTC_CONFIG_PTR() will derefence privates[-1] in this case.
+
+Signed-off-by: Matthieu Herrb <matthieu@herrb.eu>
+(cherry picked from commit 75d70612888f18339703315549db781a22c0cb23)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ hw/xfree86/modes/xf86Crtc.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hw/xfree86/modes/xf86Crtc.h b/hw/xfree86/modes/xf86Crtc.h
+index 2ab16322b..2b0fb687c 100644
+--- a/hw/xfree86/modes/xf86Crtc.h
++++ b/hw/xfree86/modes/xf86Crtc.h
+@@ -837,11 +837,11 @@ extern _X_EXPORT int xf86CrtcConfigPrivateIndex;
+ static _X_INLINE xf86OutputPtr
+ xf86CompatOutput(ScrnInfoPtr pScrn)
+ {
+-    xf86CrtcConfigPtr config = XF86_CRTC_CONFIG_PTR(pScrn);
++    xf86CrtcConfigPtr config;
+ 
+     if (xf86CrtcConfigPrivateIndex == -1)
+         return NULL;
+-
++    config = XF86_CRTC_CONFIG_PTR(pScrn);
+     if (config->compat_output < 0)
+         return NULL;
+     return config->output[config->compat_output];
+-- 
+2.54.0
+

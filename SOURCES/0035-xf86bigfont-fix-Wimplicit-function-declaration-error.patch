@@ -1,0 +1,45 @@
+From 438c50a04248e7dcbd1f500bd5787034157b82c7 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 10 Aug 2025 09:43:33 -0700
+Subject: [PATCH xserver 35/51] xf86bigfont: fix
+ -Wimplicit-function-declaration error
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Build breaks with gcc 14 & later when xf86bigfont is enabled:
+
+../Xext/xf86bigfont.c: In function ‘XFree86BigfontExtensionInit’:
+../Xext/xf86bigfont.c:709:28: error: implicit declaration of function
+ ‘xfont2_allocate_font_private_index’;
+ did you mean ‘AllocateFontPrivateIndex’? [-Wimplicit-function-declaration]
+  709 |         FontShmdescIndex = xfont2_allocate_font_private_index();
+      |                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                            AllocateFontPrivateIndex
+
+Fixes: 05a793f5b ("dix: Switch to the libXfont2 API (v2)")
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 0617f6075b6a867c90912ccaf9de2200d06a5419)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ Xext/xf86bigfont.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/Xext/xf86bigfont.c b/Xext/xf86bigfont.c
+index 529595bb7..13f7fbf10 100644
+--- a/Xext/xf86bigfont.c
++++ b/Xext/xf86bigfont.c
+@@ -58,6 +58,9 @@
+ 
+ #include <X11/X.h>
+ #include <X11/Xproto.h>
++#include <X11/fonts/fontstruct.h>
++#include <X11/fonts/libxfont2.h>
++
+ #include "misc.h"
+ #include "os.h"
+ #include "dixstruct.h"
+-- 
+2.54.0
+

@@ -1,0 +1,45 @@
+From 0e8e24610bd8135ec0855c8a25b903f012eaad1a Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 4 Oct 2025 16:20:37 -0700
+Subject: [PATCH xserver 09/51] Xext/vidmode: avoid null dereference if
+ VidModeCreateMode() allocation fails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+xwayland-24.1.6/redhat-linux-build/../Xext/vidmode.c:96:5: warning[-Wanalyzer-null-argument]: use of NULL ‘VidModeCreateMode()’ where non-null expected
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 5e62aaaf57b18136969699fd073e123edfb1aa70)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xext/vidmode.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/Xext/vidmode.c b/Xext/vidmode.c
+index 6e4a7c709..2f996e9e9 100644
+--- a/Xext/vidmode.c
++++ b/Xext/vidmode.c
+@@ -808,6 +808,8 @@ ProcVidModeModModeLine(ClientPtr client)
+         return BadValue;
+ 
+     modetmp = VidModeCreateMode();
++    if (modetmp == NULL)
++        return BadAlloc;
+     VidModeCopyMode(mode, modetmp);
+ 
+     VidModeSetModeValue(modetmp, VIDMODE_H_DISPLAY, stuff->hdisplay);
+@@ -951,6 +953,8 @@ ProcVidModeValidateModeLine(ClientPtr client)
+         return BadValue;
+ 
+     modetmp = VidModeCreateMode();
++    if (modetmp == NULL)
++        return BadAlloc;
+     VidModeCopyMode(mode, modetmp);
+ 
+     VidModeSetModeValue(modetmp, VIDMODE_H_DISPLAY, stuff->hdisplay);
+-- 
+2.54.0
+

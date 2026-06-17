@@ -1,0 +1,51 @@
+From 50aa84b64bb9c38b4b67a00221ca6ae5e00808cc Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 4 Oct 2025 17:26:47 -0700
+Subject: [PATCH xserver 12/51] Xext/xselinux: avoid memory leak in
+ SELinuxAtomToSID()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../Xext/xselinux_label.c:142:13: warning[-Wanalyzer-malloc-leak]: leak of ‘rec’
+xwayland-24.1.6/redhat-linux-build/../Xext/xselinux_label.c:133:1: enter_function: entry to ‘SELinuxAtomToSID’
+xwayland-24.1.6/redhat-linux-build/../Xext/xselinux_label.c:141:15: acquire_memory: allocated here
+xwayland-24.1.6/redhat-linux-build/../Xext/xselinux_label.c:69:12: branch_true: following ‘true’ branch...
+xwayland-24.1.6/redhat-linux-build/../Xext/xselinux_label.c:142:13: danger: ‘rec’ leaks here; was allocated at [(2)](sarif:/runs/0/results/0/codeFlows/0/threadFlows/0/locations/1)
+#  140|       if (!rec) {
+#  141|           rec = calloc(1, sizeof(SELinuxAtomRec));
+#  142|->         if (!rec || !SELinuxArraySet(&arr_atoms, atom, rec))
+#  143|               return BadAlloc;
+#  144|       }
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 21cbc56c43af04a72ee2d77023194f436027eb4d)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xext/xselinux_label.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/Xext/xselinux_label.c b/Xext/xselinux_label.c
+index 8559385b9..774f1d9cc 100644
+--- a/Xext/xselinux_label.c
++++ b/Xext/xselinux_label.c
+@@ -138,8 +138,12 @@ SELinuxAtomToSID(Atom atom, int prop, SELinuxObjectRec ** obj_rtn)
+     rec = SELinuxArrayGet(&arr_atoms, atom);
+     if (!rec) {
+         rec = calloc(1, sizeof(SELinuxAtomRec));
+-        if (!rec || !SELinuxArraySet(&arr_atoms, atom, rec))
++        if (!rec)
+             return BadAlloc;
++        if (!SELinuxArraySet(&arr_atoms, atom, rec)) {
++            free(rec);
++            return BadAlloc;
++        }
+     }
+ 
+     if (prop) {
+-- 
+2.54.0
+

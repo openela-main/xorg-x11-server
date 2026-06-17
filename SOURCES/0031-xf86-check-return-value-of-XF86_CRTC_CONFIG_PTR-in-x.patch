@@ -1,0 +1,35 @@
+From 33ce204fd96b7f46f97da73f3144eca384584513 Mon Sep 17 00:00:00 2001
+From: Benjamin Valentin <benjamin.valentin@ml-pa.com>
+Date: Mon, 27 Dec 2021 14:53:22 +0100
+Subject: [PATCH xserver 31/51] xf86: check return value of
+ XF86_CRTC_CONFIG_PTR in xf86CompatOutput()
+
+If privates[xf86CrtcConfigPrivateIndex].ptr is NULL, this will cause
+a segfault.
+
+Possible fix for !1241
+
+Signed-off-by: Benjamin Valentin <benjamin.valentin@ml-pa.com>
+(cherry picked from commit 907c501926775fdbc9a8bfcfd3d64ac3d5502775)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ hw/xfree86/modes/xf86Crtc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xfree86/modes/xf86Crtc.h b/hw/xfree86/modes/xf86Crtc.h
+index 2b0fb687c..d8cba59fd 100644
+--- a/hw/xfree86/modes/xf86Crtc.h
++++ b/hw/xfree86/modes/xf86Crtc.h
+@@ -842,7 +842,7 @@ xf86CompatOutput(ScrnInfoPtr pScrn)
+     if (xf86CrtcConfigPrivateIndex == -1)
+         return NULL;
+     config = XF86_CRTC_CONFIG_PTR(pScrn);
+-    if (config->compat_output < 0)
++    if ((config == NULL) || (config->compat_output < 0))
+         return NULL;
+     return config->output[config->compat_output];
+ }
+-- 
+2.54.0
+

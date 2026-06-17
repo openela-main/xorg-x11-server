@@ -1,0 +1,59 @@
+From 361a7e40f294e471d4b2f9bfb7a250fb84d8564b Mon Sep 17 00:00:00 2001
+From: hongao <hongao@uniontech.com>
+Date: Wed, 15 May 2024 14:35:23 +0800
+Subject: [PATCH xserver 28/51] randr: clear primary screen's primaryOutput
+ when the output is deleted
+
+This fix use after free when a pluggable gpu screen (such as displaylink)
+was set as primary screen and unpluged.
+
+gdb backtrace:
+ #0 OssigHandler (signo=11, sip=0x7fff2e0a50f0, unused=0x7fff2e0a4fc0) at ../../../../os/osinit.c:138
+ #1 <signal handler called>
+ #2 rrGetscreenResources (client=0x3195160, query=0) at ../../../../randr/rrscreen.c:577
+ #3 0x0000000000562bae in ProcRRGetscreenResourcesCurrent (client=0x3195160) at ../../../../randr/rrscreen.c:652
+ #4 OxOOOOB0000054de63 in ProcRRDispatch (client=0x3195160) at ../../../../randr/randr.c:717
+ #5 0x00000000004322c6 in Dispatch () at ../../../../dix/dispatch.c:485
+ #6 0x0900900990443139 in dix_main (argc=12, argv=0x7fff2e0a5f78, envp=0x7fff2e0a5fe0) at ../../../../dix/main.c:276
+ #7 0X0000000000421d9a in main (argc=12, argv=0x7fff2e0a5f78, envp=0x7fff2e0a5fe0) at ../../../../dix/stubmain.c:34
+
+Signed-off-by: hongao <hongao@uniontech.com>
+(cherry picked from commit 1443fd34ea37e8c7cedfac446e4a34205c5fbbb0)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ randr/rroutput.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/randr/rroutput.c b/randr/rroutput.c
+index e52ad7671..d98446ab1 100644
+--- a/randr/rroutput.c
++++ b/randr/rroutput.c
+@@ -374,6 +374,8 @@ RROutputDestroyResource(void *value, XID pid)
+ {
+     RROutputPtr output = (RROutputPtr) value;
+     ScreenPtr pScreen = output->pScreen;
++    ScreenPtr primary;
++    rrScrPrivPtr primarysp;
+     int m;
+ 
+     if (pScreen) {
+@@ -394,6 +396,15 @@ RROutputDestroyResource(void *value, XID pid)
+         if (pScrPriv->primaryOutput == output)
+             pScrPriv->primaryOutput = NULL;
+ 
++        if (pScreen->isGPU) {
++            primary = pScreen->current_master;
++            if (primary) {
++                primarysp = rrGetScrPriv(primary);
++                if (primarysp->primaryOutput == output)
++                    primarysp->primaryOutput = NULL;
++            }
++        }
++
+         for (i = 0; i < pScrPriv->numOutputs; i++) {
+             if (pScrPriv->outputs[i] == output) {
+                 memmove(pScrPriv->outputs + i, pScrPriv->outputs + i + 1,
+-- 
+2.54.0
+

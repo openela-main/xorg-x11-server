@@ -1,0 +1,40 @@
+From 5a3926455d74fe167af612ee11399c0f8cd896b5 Mon Sep 17 00:00:00 2001
+From: Mikhail Dmitrichenko <mdmitrichenko@astralinux.ru>
+Date: Wed, 17 Sep 2025 17:29:49 +0300
+Subject: [PATCH xserver 01/51] os: avoid potential out-of-bounds access at
+ logVHdrMessageVerb
+
+The LogVHdrMessageVerb function may access an array out of bounds in a
+specific edge case. Specifically, the line:
+
+newline = (buf[len - 1] == '\n');
+
+can result in accessing buf[-1] if len == 0, which is undefined behavior.
+
+Commit adds check to avoid access out of bounds at pointed line.
+
+Closes: https://gitlab.freedesktop.org/xorg/xserver/-/issues/1841
+Signed-off-by: Mikhail Dmitrichenko <m.dmitrichenko222@gmail.com>
+(cherry picked from commit 8d25a8914346824f820490ba7090175dea9428cd)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ os/log.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/os/log.c b/os/log.c
+index cc8219129..71210aee8 100644
+--- a/os/log.c
++++ b/os/log.c
+@@ -827,7 +827,7 @@ LogVHdrMessageVerb(MessageType type, int verb, const char *msg_format,
+     if (size - len == 1)
+         buf[len - 1] = '\n';
+ 
+-    newline = (buf[len - 1] == '\n');
++    newline = (len > 0 && buf[len - 1] == '\n');
+     LogSWrite(verb, buf, len, newline);
+ }
+ 
+-- 
+2.54.0
+

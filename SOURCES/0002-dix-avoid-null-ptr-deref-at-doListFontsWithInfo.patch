@@ -1,0 +1,47 @@
+From 27d924f41a04f37ee8a16ba2419a703174c5026c Mon Sep 17 00:00:00 2001
+From: Mikhail Dmitrichenko <mdmitrichenko@astralinux.ru>
+Date: Wed, 17 Sep 2025 17:25:40 +0300
+Subject: [PATCH xserver 02/51] dix: avoid null ptr deref at
+ doListFontsWithInfo
+
+In the doListFontsWithInfo function in dixfonts.c, when a font alias is
+encountered (err == FontNameAlias), the code saves the current state
+and allocates memory for c->savedName.
+
+If the malloc(namelen + 1) call fails, c->savedName remains NULL,
+but c->haveSaved is still set to TRUE. Later, when a font is
+successfully resolved (err == Successful), the code uses c->savedName
+without checking if it is NULL, so there is potential null ptr
+dereference. XNFalloc will check result of malloc and stop
+program execution if allocation was failed.
+
+Found by Linux Verification Center (linuxtesting.org) with SVACE.
+
+Closes: https://gitlab.freedesktop.org/xorg/xserver/-/issues/1842
+Signed-off-by: Mikhail Dmitrichenko <m.dmitrichenko222@gmail.com>
+(cherry picked from commit dd5c2595a42d3ff0c4f18d9b53d1f6c3fd934fd4)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ dix/dixfonts.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/dix/dixfonts.c b/dix/dixfonts.c
+index 386c38686..b079dcf67 100644
+--- a/dix/dixfonts.c
++++ b/dix/dixfonts.c
+@@ -933,9 +933,8 @@ doListFontsWithInfo(ClientPtr client, LFWIclosurePtr c)
+                 c->haveSaved = TRUE;
+                 c->savedNumFonts = numFonts;
+                 free(c->savedName);
+-                c->savedName = malloc(namelen + 1);
+-                if (c->savedName)
+-                    memmove(c->savedName, name, namelen + 1);
++                c->savedName = XNFalloc(namelen + 1);
++                memcpy(c->savedName, name, namelen + 1);
+                 aliascount = 20;
+             }
+             if (namelen > XLFDMAXFONTNAMELEN) {
+-- 
+2.54.0
+

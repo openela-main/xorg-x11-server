@@ -1,0 +1,38 @@
+From ae00a059dcfdc8c1de23f8e9310bd140679aba09 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 4 Oct 2025 17:10:20 -0700
+Subject: [PATCH xserver 10/51] Xext/xres: avoid null dereference in
+ ProcXResQueryClients()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../Xext/xres.c:233:13: warning[-Wanalyzer-possible-null-dereference]: dereference of possibly-NULL ‘current_clients’
+xwayland-24.1.6/redhat-linux-build/../Xext/xres.c:228:23: acquire_memory: this call could return NULL
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 3da60c96a9c3ea26404313eb490e46847b04949c)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xext/xres.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Xext/xres.c b/Xext/xres.c
+index 7a7aabc9b..4ef8aa04f 100644
+--- a/Xext/xres.c
++++ b/Xext/xres.c
+@@ -224,6 +224,8 @@ ProcXResQueryClients(ClientPtr client)
+     REQUEST_SIZE_MATCH(xXResQueryClientsReq);
+ 
+     current_clients = xallocarray(currentMaxClients, sizeof(int));
++    if (current_clients == NULL)
++        return BadAlloc;
+ 
+     num_clients = 0;
+     for (i = 0; i < currentMaxClients; i++) {
+-- 
+2.54.0
+

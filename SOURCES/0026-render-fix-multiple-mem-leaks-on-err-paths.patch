@@ -1,0 +1,50 @@
+From 7ad37a32bc5ad5d385bfd65755d58f10f1c10013 Mon Sep 17 00:00:00 2001
+From: Mikhail Dmitrichenko <m.dmitrichenko222@gmail.com>
+Date: Thu, 5 Feb 2026 16:07:43 +0300
+Subject: [PATCH xserver 26/51] render: fix multiple mem leaks on err paths
+
+Free nested allocations when initialization fails.
+Several code paths returned early on error without releasing
+memory owned by embedded structures, leading to leaks.
+
+Found by Linux Verification Center (linuxtesting.org) with SVACE.
+
+Signed-off-by: Mikhail Dmitrichenko <m.dmitrichenko222@gmail.com>
+(cherry picked from commit 809402414e4b84ad5c084221c7b4da9bd2c5d55d)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ render/picture.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/render/picture.c b/render/picture.c
+index a53f3b560..f6729eaef 100644
+--- a/render/picture.c
++++ b/render/picture.c
+@@ -911,6 +911,7 @@ CreateLinearGradientPicture(Picture pid, xPointFixed * p1, xPointFixed * p2,
+ 
+     initGradient(pPicture->pSourcePict, nStops, stops, colors, error);
+     if (*error) {
++        free(pPicture->pSourcePict);
+         free(pPicture);
+         return 0;
+     }
+@@ -956,6 +957,7 @@ CreateRadialGradientPicture(Picture pid, xPointFixed * inner,
+ 
+     initGradient(pPicture->pSourcePict, nStops, stops, colors, error);
+     if (*error) {
++        free(pPicture->pSourcePict);
+         free(pPicture);
+         return 0;
+     }
+@@ -994,6 +996,7 @@ CreateConicalGradientPicture(Picture pid, xPointFixed * center, xFixed angle,
+ 
+     initGradient(pPicture->pSourcePict, nStops, stops, colors, error);
+     if (*error) {
++        free(pPicture->pSourcePict);
+         free(pPicture);
+         return 0;
+     }
+-- 
+2.54.0
+

@@ -1,0 +1,43 @@
+From 4c5a0e203feaae43134264bb3a999453d6f09a2c Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 5 Oct 2025 17:37:48 -0700
+Subject: [PATCH xserver 17/51] Xi: handle allocation failure in
+ ProcXListInputDevices()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../Xi/listdev.c:171:5:
+ warning[-Wanalyzer-possible-null-dereference]:
+ dereference of possibly-NULL ‘dev’
+xwayland-24.1.6/redhat-linux-build/../Xi/listdev.c:379:23:
+ acquire_memory: this call could return NULL
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 19c6195e711d9f9fabbde1bea7a6393c4a4c3cd3)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xi/listdev.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/Xi/listdev.c b/Xi/listdev.c
+index c15e61b37..5b860e92c 100644
+--- a/Xi/listdev.c
++++ b/Xi/listdev.c
+@@ -377,6 +377,10 @@ ProcXListInputDevices(ClientPtr client)
+     /* allocate space for reply */
+     total_length = numdevs * sizeof(xDeviceInfo) + size + namesize;
+     devbuf = (char *) calloc(1, total_length);
++    if (!devbuf) {
++        free(skip);
++        return BadAlloc;
++    }
+     classbuf = devbuf + (numdevs * sizeof(xDeviceInfo));
+     namebuf = classbuf + size;
+     savbuf = devbuf;
+-- 
+2.54.0
+

@@ -1,0 +1,42 @@
+From 28c7d5470a1d4241594d2629952427767e3b88ce Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 12 Oct 2025 09:48:15 -0700
+Subject: [PATCH xserver 22/51] dix: handle allocation failure in
+ ChangeWindowDeviceCursor()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../dix/window.c:3495:9:
+ warning[-Wanalyzer-possible-null-dereference]:
+ dereference of possibly-NULL ‘pNewNode’
+xwayland-24.1.6/redhat-linux-build/../dix/window.c:3494:20:
+ acquire_memory: this call could return NULL
+
+Fixes: 95e1a8805 ("Xi: Adding ChangeDeviceCursor request" in xorg 1.10.0)
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit c9fa8a8da161e1c37058a342ba5495ce627d0985)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ dix/window.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/dix/window.c b/dix/window.c
+index 8789a5ece..219e8c470 100644
+--- a/dix/window.c
++++ b/dix/window.c
+@@ -3510,6 +3510,8 @@ ChangeWindowDeviceCursor(WindowPtr pWin, DeviceIntPtr pDev, CursorPtr pCursor)
+             return Success;
+ 
+         pNewNode = malloc(sizeof(DevCursNodeRec));
++        if (!pNewNode)
++            return BadAlloc;
+         pNewNode->dev = pDev;
+         pNewNode->next = pWin->optional->deviceCursors;
+         pWin->optional->deviceCursors = pNewNode;
+-- 
+2.54.0
+
