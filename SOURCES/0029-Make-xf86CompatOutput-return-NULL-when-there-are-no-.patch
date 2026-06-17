@@ -1,0 +1,31 @@
+From 8b532c093256aea097867ec12afab459076f28a3 Mon Sep 17 00:00:00 2001
+From: Matthieu Herrb <matthieu.herrb@laas.fr>
+Date: Sun, 31 Oct 2021 11:28:28 +0100
+Subject: [PATCH xserver 29/51] Make xf86CompatOutput() return NULL when there
+ are no privates
+
+Some drivers (mach64 w/o DRI for instance) don't initialize privates.
+
+Signed-off-by: Matthieu Herrb <matthieu.herrb@laas.fr>
+(cherry picked from commit 80eeff3ebac772e25c9107199989e677457dbe06)
+---
+ hw/xfree86/modes/xf86Crtc.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/hw/xfree86/modes/xf86Crtc.h b/hw/xfree86/modes/xf86Crtc.h
+index 1d1124a1b..2ab16322b 100644
+--- a/hw/xfree86/modes/xf86Crtc.h
++++ b/hw/xfree86/modes/xf86Crtc.h
+@@ -839,6 +839,9 @@ xf86CompatOutput(ScrnInfoPtr pScrn)
+ {
+     xf86CrtcConfigPtr config = XF86_CRTC_CONFIG_PTR(pScrn);
+ 
++    if (xf86CrtcConfigPrivateIndex == -1)
++        return NULL;
++
+     if (config->compat_output < 0)
+         return NULL;
+     return config->output[config->compat_output];
+-- 
+2.54.0
+

@@ -1,0 +1,52 @@
+From d977ac58df2837014b4b1745113d03937cf6bf2f Mon Sep 17 00:00:00 2001
+From: Mikhail Dmitrichenko <m.dmitrichenko222@gmail.com>
+Date: Wed, 17 Dec 2025 11:15:27 +0300
+Subject: [PATCH xserver 27/51] dix: avoid null ptr deref at
+ doListFontsAndAliases
+
+In the `doListFontsAndAliases` function in dixfonts.c, when a font alias
+is encountered (`err == FontNameAlias`) as a result of
+`list_next_font_or_alias` call, the code allocates memory for
+`resolved` variable (`resolvedlen + 1` bytes) for storing target font
+name. In this case, if the `malloc(resolvedlen + 1)` call fails,
+`resolved` remains NULL.
+
+Later, when check (`else if (err == FontNameAlias)`) is TRUE, the code
+uses `memcpy` to copy nullable `resolved` into `tmp_pattern` without
+checking if `resolved` is NULL, so there is a potential null ptr
+dereference.
+
+This commit replaces `malloc` with `XNFalloc` for allocating memory for
+`resolved`. `XNFalloc` will internally check result of `malloc` and stop
+program execution if allocation was failed, preventing potential NULL
+dereferencing.
+
+Found by Linux Verification Center (linuxtesting.org) with SVACE.
+
+Signed-off-by: Mikhail Dmitrichenko <m.dmitrichenko222@gmail.com>
+(cherry picked from commit 0237462d326c78868c83b6eda35a9d35725f3b33)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ dix/dixfonts.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/dix/dixfonts.c b/dix/dixfonts.c
+index b079dcf67..553f4d7d4 100644
+--- a/dix/dixfonts.c
++++ b/dix/dixfonts.c
+@@ -639,9 +639,8 @@ doListFontsAndAliases(ClientPtr client, LFclosurePtr c)
+                 }
+                 if (err == FontNameAlias) {
+                     free(resolved);
+-                    resolved = malloc(resolvedlen + 1);
+-                    if (resolved)
+-                        memmove(resolved, tmpname, resolvedlen + 1);
++                    resolved = XNFalloc(resolvedlen + 1);
++                    memcpy(resolved, tmpname, resolvedlen + 1);
+                 }
+             }
+ 
+-- 
+2.54.0
+

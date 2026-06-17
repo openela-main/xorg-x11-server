@@ -1,0 +1,41 @@
+From f9d3537883522255d5fa91ea8b63c745286232ee Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 5 Oct 2025 17:32:45 -0700
+Subject: [PATCH xserver 16/51] Xi: handle allocation failure in
+ ProcXGetDeviceDontPropagateList()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../Xi/getprop.c:163:25:
+ warning[-Wanalyzer-possible-null-dereference]:
+ dereference of possibly-NULL ‘buf’
+xwayland-24.1.6/redhat-linux-build/../Xi/getprop.c:121:19:
+ acquire_memory: this call could return NULL
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 7b18313e2a9d0409ac7465d2f313153013fdf5a3)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xi/getprop.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Xi/getprop.c b/Xi/getprop.c
+index b744f35cb..b53db7306 100644
+--- a/Xi/getprop.c
++++ b/Xi/getprop.c
+@@ -119,6 +119,8 @@ ProcXGetDeviceDontPropagateList(ClientPtr client)
+         if (count) {
+             rep.count = count;
+             buf = xallocarray(rep.count, sizeof(XEventClass));
++            if (buf == NULL)
++                return BadAlloc;
+             rep.length = bytes_to_int32(rep.count * sizeof(XEventClass));
+ 
+             tbuf = buf;
+-- 
+2.54.0
+

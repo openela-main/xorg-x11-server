@@ -1,0 +1,56 @@
+From de8df5f72f7f1673fc1bb7a9c84ba0e7f1d5e562 Mon Sep 17 00:00:00 2001
+From: "Enrico Weigelt, metux IT consult" <info@metux.net>
+Date: Wed, 24 Jan 2024 17:18:16 +0100
+Subject: [PATCH xserver] xkb: fix int size mismatch
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+GCC reports:
+
+../xkb/xkb.c: In function ‘_XkbSetMapCheckLength’:
+../xkb/xkb.c:2464:54: warning: format ‘%ld’ expects argument of type ‘long int’, but argument 2 has type ‘size_t’ {aka ‘unsigned int’} [-Wformat=]
+ 2464 |     ErrorF("[xkb] BOGUS LENGTH in SetMap: expected %ld got %ld\n",
+      |                                                    ~~^
+      |                                                      |
+      |                                                      long int
+      |                                                    %d
+ 2465 |            len, req_len);
+      |            ~~~
+      |            |
+      |            size_t {aka unsigned int}
+../xkb/xkb.c:2464:62: warning: format ‘%ld’ expects argument of type ‘long int’, but argument 3 has type ‘size_t’ {aka ‘unsigned int’} [-Wformat=]
+ 2464 |     ErrorF("[xkb] BOGUS LENGTH in SetMap: expected %ld got %ld\n",
+      |                                                            ~~^
+      |                                                              |
+      |                                                              long int
+      |                                                            %d
+ 2465 |            len, req_len);
+      |                 ~~~~~~~
+      |                 |
+      |                 size_t {aka unsigned int}
+
+Signed-off-by: Enrico Weigelt, metux IT consult <info@metux.net>
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/1257>
+(cherry picked from commit bc90c44e60c309564a7feec5d288ecafcbb2a62b)
+---
+ xkb/xkb.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/xkb/xkb.c b/xkb/xkb.c
+index b240b6f6c..8d52e25df 100644
+--- a/xkb/xkb.c
++++ b/xkb/xkb.c
+@@ -2460,8 +2460,7 @@ _XkbSetMapCheckLength(xkbSetMapReq *req)
+     if (len == req_len)
+         return Success;
+ bad:
+-    ErrorF("[xkb] BOGUS LENGTH in SetMap: expected %ld got %ld\n",
+-           len, req_len);
++    ErrorF("[xkb] BOGUS LENGTH in SetMap: expected %zd got %zd\n", len, req_len);
+     return BadLength;
+ }
+ 
+-- 
+2.54.0
+

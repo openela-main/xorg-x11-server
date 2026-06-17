@@ -1,0 +1,43 @@
+From 5eeb67f1d806c25ef31d2110b21644a59de83815 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 5 Oct 2025 17:12:29 -0700
+Subject: [PATCH xserver 15/51] Xi: set value for led_values in
+ CopySwapKbdFeedback()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(The existing setting of led_mask is probably wrong, but has been set
+ like this since X11R5 and going back as far as the first version in
+ the X Consortium source control archives.)
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../Xi/getfctl.c:108:9:
+ warning[-Wanalyzer-use-of-uninitialized-value]:
+ use of uninitialized value ‘*k2.led_values’
+108|->         swapl(&k2->led_values);
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 90c8429d3509894f8834ead3b15f2e76657e57a6)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xi/getfctl.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Xi/getfctl.c b/Xi/getfctl.c
+index eea0113c1..61f14c5ea 100644
+--- a/Xi/getfctl.c
++++ b/Xi/getfctl.c
+@@ -97,6 +97,7 @@ CopySwapKbdFeedback(ClientPtr client, KbdFeedbackPtr k, char **buf)
+     k2->pitch = k->ctrl.bell_pitch;
+     k2->duration = k->ctrl.bell_duration;
+     k2->led_mask = k->ctrl.leds;
++    k2->led_values = k->ctrl.leds;
+     k2->global_auto_repeat = k->ctrl.autoRepeat;
+     for (i = 0; i < 32; i++)
+         k2->auto_repeats[i] = k->ctrl.autoRepeats[i];
+-- 
+2.54.0
+

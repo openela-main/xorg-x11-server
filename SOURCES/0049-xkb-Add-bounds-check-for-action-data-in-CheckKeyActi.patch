@@ -1,0 +1,50 @@
+From fa79e0f32fbdae0591fe07307ea4bf3ff2541fc2 Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Sat, 18 Apr 2026 07:38:14 +1000
+Subject: [PATCH xserver 49/51] xkb: Add bounds check for action data in
+ CheckKeyActions()
+
+CheckKeyActions() validates the per-key action count bytes individually
+but does not verify that the computed total action data region falls
+within the request buffer before advancing the wire pointer past it.
+
+After the loop, the function calculates the final wire position as
+wire + nActs * sizeof(XkbAnyAction), where nActs is the sum of per-key
+action counts read from the request. The upstream length validation in
+_XkbSetMapCheckLength() uses req->totalActs from the request header,
+not the computed nActs. If a crafted request provides a totalActs value
+that passes the length check but per-key action counts that sum to a
+different nActs, the wire pointer could advance past the actual request
+buffer.
+
+The subsequent SetKeyActions() function uses memcpy to read from this
+potentially out-of-bounds region, which could leak heap data or cause
+a crash.
+
+Assisted-by: Claude:claude-claude-opus-4-6
+(cherry picked from commit a439a7340ad976983ef34eca4f537831b38e191f)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2224>
+---
+ xkb/xkb.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/xkb/xkb.c b/xkb/xkb.c
+index b2c2dfa24..fc0476056 100644
+--- a/xkb/xkb.c
++++ b/xkb/xkb.c
+@@ -1863,6 +1863,11 @@ CheckKeyActions(ClientPtr client,
+     if (req->nKeyActs % 4)
+         wire += 4 - (req->nKeyActs % 4);
+     *wireRtrn = (CARD8 *) (((XkbAnyAction *) wire) + nActs);
++    if (nActs > 0 &&
++        !_XkbCheckRequestBounds(client, req, wire, *wireRtrn)) {
++        *nActsRtrn = _XkbErrCode2(0x25, nActs);
++        return 0;
++    }
+     *nActsRtrn = nActs;
+     return 1;
+ }
+-- 
+2.54.0
+

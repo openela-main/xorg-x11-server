@@ -1,0 +1,62 @@
+From 98988e606948fb88290fe51ab8aed599c2dc7b42 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 11 Oct 2025 18:26:55 -0700
+Subject: [PATCH xserver 21/51] dix: assert that size of buffers to swap is a
+ multiple of the swap size
+
+If we're swapping 4-byte integers or 2-byte integers, make sure the size
+of the buffer doesn't have any bytes left over, since we won't correctly
+handle those bytes.
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../dix/swaprep.c:99:22:
+ warning[-Wanalyzer-allocation-size]:
+ allocated buffer size is not a multiple of the pointee's size
+
+xwayland-24.1.6/redhat-linux-build/../dix/swaprep.c:146:22:
+ warning[-Wanalyzer-allocation-size]:
+ allocated buffer size is not a multiple of the pointee's size
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit cf49354b6060b71ae41febe67327278fbcb7c74a)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ dix/swaprep.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/dix/swaprep.c b/dix/swaprep.c
+index 08344d7f7..04279e5f4 100644
+--- a/dix/swaprep.c
++++ b/dix/swaprep.c
+@@ -48,6 +48,8 @@ SOFTWARE.
+ #include <dix-config.h>
+ #endif
+ 
++#include <assert.h>
++
+ #include <X11/X.h>
+ #include <X11/Xproto.h>
+ #include "misc.h"
+@@ -95,6 +97,8 @@ CopySwap32Write(ClientPtr pClient, int size, CARD32 *pbuf)
+     CARD32 *from, *to, *fromLast, *toLast;
+     CARD32 tmpbuf[1];
+ 
++    assert((bufsize % sizeof(CARD32)) == 0);
++
+     /* Allocate as big a buffer as we can... */
+     while (!(pbufT = malloc(bufsize))) {
+         bufsize >>= 1;
+@@ -142,6 +146,8 @@ CopySwap16Write(ClientPtr pClient, int size, short *pbuf)
+     short *from, *to, *fromLast, *toLast;
+     short tmpbuf[2];
+ 
++    assert((bufsize % sizeof(short)) == 0);
++
+     /* Allocate as big a buffer as we can... */
+     while (!(pbufT = malloc(bufsize))) {
+         bufsize >>= 1;
+-- 
+2.54.0
+

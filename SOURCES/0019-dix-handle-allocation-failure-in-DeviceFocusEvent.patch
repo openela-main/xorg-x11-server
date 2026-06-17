@@ -1,0 +1,39 @@
+From 4f68278ca74892098c6600adc3e6d8901682793e Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 11 Oct 2025 12:59:04 -0700
+Subject: [PATCH xserver 19/51] dix: handle allocation failure in
+ DeviceFocusEvent()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../dix/enterleave.c:786:5:
+ warning[-Wanalyzer-possible-null-dereference]:
+ dereference of possibly-NULL ‘xi2event’
+
+Fixes: 3f37923a7 ("Xi: send XI2 focus events." in Xorg 1.10.0)
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit dedceb52bcbba2431368b53acbbba490ac8ee485)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ dix/enterleave.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/dix/enterleave.c b/dix/enterleave.c
+index 78a7dab39..df3ffd224 100644
+--- a/dix/enterleave.c
++++ b/dix/enterleave.c
+@@ -774,6 +774,7 @@ DeviceFocusEvent(DeviceIntPtr dev, int type, int mode, int detail,
+     len = sizeof(xXIFocusInEvent) + btlen * 4;
+ 
+     xi2event = calloc(1, len);
++    BUG_RETURN(xi2event == NULL);
+     xi2event->type = GenericEvent;
+     xi2event->extension = IReqCode;
+     xi2event->evtype = type;
+-- 
+2.54.0
+

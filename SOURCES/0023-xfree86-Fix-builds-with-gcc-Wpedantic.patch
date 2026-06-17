@@ -1,0 +1,42 @@
+From 6fda4afcb9f5ebcaa7ebb91a4e55a19c4a64cf4d Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 10 Aug 2025 11:20:01 -0700
+Subject: [PATCH xserver 23/51] xfree86: Fix builds with gcc -Wpedantic
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+../hw/xfree86/loader/loadmod.c:85:33: warning: ISO C forbids empty
+ initializer braces before C23 [-Wpedantic]
+   85 | static int ModuleDuplicated[] = { };
+      |                                 ^
+../hw/xfree86/loader/loadmod.c:85:12: error: zero or negative size array
+ ‘ModuleDuplicated’
+   85 | static int ModuleDuplicated[] = { };
+      |            ^~~~~~~~~~~~~~~~
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit d03c84b57f1455b20518781026777b938194b2a4)
+(cherry picked from commit 3e0f37c95c92829e338a910379440ba9b4f4170d)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ hw/xfree86/loader/loadmod.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xfree86/loader/loadmod.c b/hw/xfree86/loader/loadmod.c
+index 342c7b800..6f7c6d93c 100644
+--- a/hw/xfree86/loader/loadmod.c
++++ b/hw/xfree86/loader/loadmod.c
+@@ -82,7 +82,7 @@ const ModuleVersions LoaderVersionInfo = {
+     ABI_EXTENSION_VERSION,
+ };
+ 
+-static int ModuleDuplicated[] = { };
++static int ModuleDuplicated[] = { 0 };
+ 
+ static void
+ FreeStringList(char **paths)
+-- 
+2.54.0
+

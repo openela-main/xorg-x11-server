@@ -1,0 +1,49 @@
+From 5e657943933a79166d2020ee978abd8afa5fccfe Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 20 Sep 2025 16:35:46 -0700
+Subject: [PATCH xserver 03/51] panoramix: avoid null dereference in
+ PanoramiXMaybeAddDepth()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+Error: GCC_ANALYZER_WARNING (CWE-476): [#def4]
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:748:5: warning[-Wanalyzer-possible-null-dereference]: dereference of possibly-NULL ‘PanoramiXDepths’
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:802:1: enter_function: entry to ‘PanoramiXConsolidate’
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:813:17: branch_true: following ‘true’ branch...
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:814:9: branch_true: ...to here
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:814:9: call_function: calling ‘PanoramiXMaybeAddDepth’ from ‘PanoramiXConsolidate’
+746|       PanoramiXDepths = reallocarray(PanoramiXDepths,
+747|                                      PanoramiXNumDepths, sizeof(DepthRec));
+748|->     PanoramiXDepths[j].depth = pDepth->depth;
+749|       PanoramiXDepths[j].numVids = 0;
+750|       PanoramiXDepths[j].vids = NULL;
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 537b56cccaf1759f9beef9396463b1f412614003)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xext/panoramiX.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Xext/panoramiX.c b/Xext/panoramiX.c
+index bd9c45b03..00585e3f6 100644
+--- a/Xext/panoramiX.c
++++ b/Xext/panoramiX.c
+@@ -747,8 +747,8 @@ PanoramiXMaybeAddDepth(DepthPtr pDepth)
+ 
+     j = PanoramiXNumDepths;
+     PanoramiXNumDepths++;
+-    PanoramiXDepths = reallocarray(PanoramiXDepths,
+-                                   PanoramiXNumDepths, sizeof(DepthRec));
++    PanoramiXDepths = XNFreallocarray(PanoramiXDepths,
++                                      PanoramiXNumDepths, sizeof(DepthRec));
+     PanoramiXDepths[j].depth = pDepth->depth;
+     PanoramiXDepths[j].numVids = 0;
+     PanoramiXDepths[j].vids = NULL;
+-- 
+2.54.0
+

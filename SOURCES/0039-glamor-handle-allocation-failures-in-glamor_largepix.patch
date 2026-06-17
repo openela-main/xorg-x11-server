@@ -1,0 +1,93 @@
+From c58f85aaaea2613c3049a6032d75d2422d748c71 Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 26 Oct 2025 15:39:47 -0700
+Subject: [PATCH xserver 39/51] glamor: handle allocation failures in
+ glamor_largepixmap.c
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../glamor/glamor_largepixmap.c:130:17:
+ warning[-Wanalyzer-possible-null-dereference]:
+  dereference of possibly-NULL ‘clipped_regions’
+
+xwayland-24.1.6/redhat-linux-build/../glamor/glamor_largepixmap.c:235:13:
+ warning[-Wanalyzer-possible-null-dereference]:
+  dereference of possibly-NULL ‘result_regions’
+
+xwayland-24.1.6/redhat-linux-build/../glamor/glamor_largepixmap.c:365:9:
+ warning[-Wanalyzer-possible-null-dereference]:
+  dereference of possibly-NULL ‘clipped_regions’
+
+xwayland-24.1.6/redhat-linux-build/../glamor/glamor_largepixmap.c:1175:9:
+ warning[-Wanalyzer-possible-null-dereference]:
+  dereference of possibly-NULL ‘source_pixmap_priv’
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 84cf20e6ddacbfc62637f156a92d673574c43604)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2146>
+---
+ glamor/glamor_largepixmap.c | 23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/glamor/glamor_largepixmap.c b/glamor/glamor_largepixmap.c
+index f9adb93bc..ba347e3d2 100644
+--- a/glamor/glamor_largepixmap.c
++++ b/glamor/glamor_largepixmap.c
+@@ -77,6 +77,10 @@ __glamor_compute_clipped_regions(int block_w,
+     clipped_regions = calloc((end_block_x - start_block_x + 1)
+                              * (end_block_y - start_block_y + 1),
+                              sizeof(*clipped_regions));
++    if (clipped_regions == NULL) {
++        *n_region = 0;
++        return NULL;
++    }
+ 
+     DEBUGF("startx %d starty %d endx %d endy %d \n",
+            start_x, start_y, end_x, end_y);
+@@ -216,6 +220,11 @@ glamor_compute_clipped_regions_ext(PixmapPtr pixmap,
+                                inner_block_w)
+                             * ((block_h + inner_block_h - 1) /
+                                inner_block_h), sizeof(*result_regions));
++    if (result_regions == NULL) {
++        *n_region = 0;
++        free(clipped_regions);
++        return NULL;
++    }
+     k = 0;
+     for (i = 0; i < *n_region; i++) {
+         x = box_array[clipped_regions[i].block_idx].x1;
+@@ -362,10 +371,14 @@ _glamor_compute_clipped_regions(PixmapPtr pixmap,
+     DEBUGRegionPrint(region);
+     if (glamor_pixmap_priv_is_small(pixmap_priv)) {
+         clipped_regions = calloc(1, sizeof(*clipped_regions));
+-        clipped_regions[0].region = RegionCreate(NULL, 1);
+-        clipped_regions[0].block_idx = 0;
+-        RegionCopy(clipped_regions[0].region, region);
+-        *n_region = 1;
++        if (clipped_regions) {
++            clipped_regions[0].region = RegionCreate(NULL, 1);
++            clipped_regions[0].block_idx = 0;
++            RegionCopy(clipped_regions[0].region, region);
++            *n_region = 1;
++        }
++        else
++            *n_region = 0;
+         return clipped_regions;
+     }
+ 
+@@ -1172,6 +1185,8 @@ glamor_composite_largepixmap_region(CARD8 op,
+         /* XXX self-copy... */
+         need_free_source_pixmap_priv = source_pixmap_priv;
+         source_pixmap_priv = malloc(sizeof(*source_pixmap_priv));
++        if (source_pixmap_priv == NULL)
++            return FALSE;
+         *source_pixmap_priv = *need_free_source_pixmap_priv;
+         need_free_source_pixmap_priv = source_pixmap_priv;
+     }
+-- 
+2.54.0
+

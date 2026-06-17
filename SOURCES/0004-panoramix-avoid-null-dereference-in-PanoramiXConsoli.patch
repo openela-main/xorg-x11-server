@@ -1,0 +1,71 @@
+From bd7f4a48a5187dd32d3a0791a407432933af0c1d Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sat, 20 Sep 2025 16:45:59 -0700
+Subject: [PATCH xserver 04/51] panoramix: avoid null dereference in
+ PanoramiXConsolidate()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported in #1817:
+
+Error: GCC_ANALYZER_WARNING (CWE-476): [#def5]
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:820:5: warning[-Wanalyzer-possible-null-dereference]: dereference of possibly-NULL ‘root’
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:819:12: acquire_memory: this call could return NULL
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:820:5: danger: ‘root’ could be NULL: unchecked value from (1)
+818|
+819|       root = malloc(sizeof(PanoramiXRes));
+820|->     root->type = XRT_WINDOW;
+821|       defmap = malloc(sizeof(PanoramiXRes));
+822|       defmap->type = XRT_COLORMAP;
+Error: GCC_ANALYZER_WARNING (CWE-476): [#def6]
+
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:822:5: warning[-Wanalyzer-possible-null-dereference]: dereference of possibly-NULL ‘defmap’
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:821:14: acquire_memory: this call could return NULL
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:822:5: danger: ‘defmap’ could be NULL: unchecked value from (1)
+820|       root->type = XRT_WINDOW;
+821|       defmap = malloc(sizeof(PanoramiXRes));
+822|->     defmap->type = XRT_COLORMAP;
+823|       saver = malloc(sizeof(PanoramiXRes));
+824|       saver->type = XRT_WINDOW;
+
+Error: GCC_ANALYZER_WARNING (CWE-476): [#def7]
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:824:5: warning[-Wanalyzer-possible-null-dereference]: dereference of possibly-NULL ‘saver’
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:823:13: acquire_memory: this call could return NULL
+xwayland-24.1.6/redhat-linux-build/../Xext/panoramiX.c:824:5: danger: ‘saver’ could be NULL: unchecked value from (1)
+822|       defmap->type = XRT_COLORMAP;
+823|       saver = malloc(sizeof(PanoramiXRes));
+824|->     saver->type = XRT_WINDOW;
+825|
+826|       FOR_NSCREENS(i) {
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 23c103d41f35cc030b0c0e973f7f3bcb8d9902a0)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xext/panoramiX.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/Xext/panoramiX.c b/Xext/panoramiX.c
+index 00585e3f6..2029b353d 100644
+--- a/Xext/panoramiX.c
++++ b/Xext/panoramiX.c
+@@ -820,11 +820,11 @@ PanoramiXConsolidate(void)
+     for (i = 0; i < pScreen->numVisuals; i++)
+         PanoramiXMaybeAddVisual(pVisual++);
+ 
+-    root = malloc(sizeof(PanoramiXRes));
++    root = XNFcallocarray(1, sizeof(PanoramiXRes));
+     root->type = XRT_WINDOW;
+-    defmap = malloc(sizeof(PanoramiXRes));
++    defmap = XNFcallocarray(1, sizeof(PanoramiXRes));
+     defmap->type = XRT_COLORMAP;
+-    saver = malloc(sizeof(PanoramiXRes));
++    saver = XNFcallocarray(1, sizeof(PanoramiXRes));
+     saver->type = XRT_WINDOW;
+ 
+     FOR_NSCREENS(i) {
+-- 
+2.54.0
+

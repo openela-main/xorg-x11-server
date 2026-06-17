@@ -1,0 +1,91 @@
+From 826550e2cfd8a033c4a16dffdd852f2115e7331f Mon Sep 17 00:00:00 2001
+From: Alan Coopersmith <alan.coopersmith@oracle.com>
+Date: Sun, 5 Oct 2025 15:38:35 -0700
+Subject: [PATCH xserver 14/51] Xi: avoid null dereference if
+ wOtherInputMasks() returns NULL
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The wOtherInputMasks(win) macro will return NULL if
+win->optional is NULL.
+
+Reported in #1817:
+
+xwayland-24.1.6/redhat-linux-build/../Xi/exevents.c:1390:13:
+ warning[-Wanalyzer-null-dereference]: dereference of NULL ‘0’
+
+xwayland-24.1.6/redhat-linux-build/../Xi/exevents.c:1404:13:
+ warning[-Wanalyzer-null-dereference]: dereference of NULL ‘0’
+
+xwayland-24.1.6/redhat-linux-build/../Xi/exevents.c:2293:9:
+ warning[-Wanalyzer-null-dereference]: dereference of NULL ‘0’
+
+xwayland-24.1.6/redhat-linux-build/../Xi/exevents.c:3244:22:
+ warning[-Wanalyzer-null-dereference]: dereference of NULL ‘inputMasks’
+
+xwayland-24.1.6/redhat-linux-build/../Xi/exevents.c:3338:9:
+ warning[-Wanalyzer-null-dereference]: dereference of NULL ‘0’
+
+Signed-off-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+(cherry picked from commit 7b7bcf92311db87a0292474dcf2ed9767f4a9abd)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2077>
+---
+ Xi/exevents.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/Xi/exevents.c b/Xi/exevents.c
+index 1930089d3..7249f492c 100644
+--- a/Xi/exevents.c
++++ b/Xi/exevents.c
+@@ -1331,6 +1331,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
+             else
+                 evtype = GetXI2Type(ev->any.type);
+ 
++            BUG_RETURN_VAL(!wOtherInputMasks(*win), FALSE);
+             nt_list_for_each_entry(iclients,
+                                    wOtherInputMasks(*win)->inputClients, next)
+                 if (xi2mask_isset(iclients->xi2mask, dev, evtype))
+@@ -1345,6 +1346,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
+             int xi_type = GetXIType(TouchGetPointerEventType(ev));
+             Mask xi_filter = event_get_filter_from_type(dev, xi_type);
+ 
++            BUG_RETURN_VAL(!wOtherInputMasks(*win), FALSE);
+             nt_list_for_each_entry(iclients,
+                                    wOtherInputMasks(*win)->inputClients, next)
+                 if (iclients->mask[dev->id] & xi_filter)
+@@ -2974,13 +2976,18 @@ DeviceEventSuppressForWindow(WindowPtr pWin, ClientPtr client, Mask mask,
+             inputMasks->dontPropagateMask[maskndx] = mask;
+     }
+     else {
+-        if (!inputMasks)
+-            AddExtensionClient(pWin, client, 0, 0);
+-        inputMasks = wOtherInputMasks(pWin);
++        if (!inputMasks) {
++            int ret = AddExtensionClient(pWin, client, 0, 0);
++
++            if (ret != Success)
++                return ret;
++            inputMasks = wOtherInputMasks(pWin);
++            BUG_RETURN_VAL(!inputMasks, BadAlloc);
++        }
+         inputMasks->dontPropagateMask[maskndx] = mask;
+     }
+     RecalculateDeviceDeliverableEvents(pWin);
+-    if (ShouldFreeInputMasks(pWin, FALSE))
++    if (inputMasks && ShouldFreeInputMasks(pWin, FALSE))
+         FreeResource(inputMasks->inputClients->resource, RT_NONE);
+     return Success;
+ }
+@@ -3075,6 +3082,7 @@ XISetEventMask(DeviceIntPtr dev, WindowPtr win, ClientPtr client,
+     if (len && !others) {
+         if (AddExtensionClient(win, client, 0, 0) != Success)
+             return BadAlloc;
++        BUG_RETURN_VAL(!wOtherInputMasks(win), BadAlloc);
+         others = wOtherInputMasks(win)->inputClients;
+     }
+ 
+-- 
+2.54.0
+

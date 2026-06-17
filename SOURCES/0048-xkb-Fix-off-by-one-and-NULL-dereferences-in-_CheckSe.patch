@@ -1,0 +1,55 @@
+From a1b025ef5278cd9e404136e9b4ef9aa769112533 Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Sat, 18 Apr 2026 07:35:53 +1000
+Subject: [PATCH xserver 48/51] xkb: Fix off-by-one and NULL dereferences in
+ _CheckSetOverlay()
+
+Off-by-one in rowUnder validation: the bounds check uses '>' instead
+of '>=' when comparing rWire->rowUnder against section->num_rows.
+Since num_rows is a count and valid indices are 0 to num_rows-1,
+rowUnder == num_rows passes the check but is one past the valid range.
+XkbAddGeomOverlayRow() uses this as an array index, causing an
+out-of-bounds read on section->rows[].
+
+And throw in two alloc checks while we're at it.
+
+Assisted-by: Claude:claude-claude-opus-4-6
+(cherry picked from commit ed19312c4bda0a8f66b236348ffc553e5d8d2a09)
+
+Part-of: <https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/2224>
+---
+ xkb/xkb.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/xkb/xkb.c b/xkb/xkb.c
+index c6e2bf40c..b2c2dfa24 100644
+--- a/xkb/xkb.c
++++ b/xkb/xkb.c
+@@ -5362,6 +5362,8 @@ _CheckSetOverlay(char **wire_inout, xkbSetGeometryReq *req,
+     }
+     CHK_ATOM_ONLY(olWire->name);
+     ol = XkbAddGeomOverlay(section, olWire->name, olWire->nRows);
++    if (!ol)
++        return BadAlloc;
+     rWire = (xkbOverlayRowWireDesc *) &olWire[1];
+     for (r = 0; r < olWire->nRows; r++) {
+         register int k;
+@@ -5371,12 +5373,14 @@ _CheckSetOverlay(char **wire_inout, xkbSetGeometryReq *req,
+         if (!_XkbCheckRequestBounds(client, req, rWire, rWire + 1))
+             return BadLength;
+ 
+-        if (rWire->rowUnder > section->num_rows) {
++        if (rWire->rowUnder >= section->num_rows) {
+             client->errorValue = _XkbErrCode4(0x20, r, section->num_rows,
+                                               rWire->rowUnder);
+             return BadMatch;
+         }
+         row = XkbAddGeomOverlayRow(ol, rWire->rowUnder, rWire->nKeys);
++        if (!row)
++            return BadAlloc;
+         kWire = (xkbOverlayKeyWireDesc *) &rWire[1];
+         for (k = 0; k < rWire->nKeys; k++, kWire++) {
+             if (!_XkbCheckRequestBounds(client, req, kWire, kWire + 1))
+-- 
+2.54.0
+
