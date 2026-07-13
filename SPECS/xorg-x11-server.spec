@@ -46,7 +46,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   28%{?gitdate:.%{gitdate}}%{?dist}.2
+Release:   28%{?gitdate:.%{gitdate}}%{?dist}.3
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X
@@ -295,6 +295,8 @@ Patch10127: 0051-glx-reject-negative-size-in-FeedbackBuffer-and-Selec.patch
 Patch10128: 0001-dix-Silence-a-compiler-warning-in-doListFontsAndAlia.patch
 # https://gitlab.freedesktop.org/xorg/xserver/-/merge_requests/1257
 Patch10129: 0001-xkb-fix-int-size-mismatch.patch
+# CVE-2026-55999: glamor Font Atlas Heap Buffer Overflow
+Patch10130: CVE-2026-55999.patch
 
 
 BuildRequires: make
@@ -724,6 +726,10 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Thu Jul 09 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-28.3
+- CVE fix for CVE-2026-55999
+  Resolves: https://redhat.atlassian.net/browse/RHEL-191504
+
 * Fri Jun 12 2026  Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-28.2
 - Other security related fixes
   Resolves: https://redhat.atlassian.net/browse/RHEL-184289
