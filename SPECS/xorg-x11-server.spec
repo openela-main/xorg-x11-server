@@ -42,7 +42,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   34%{?gitdate:.%{gitdate}}%{?dist}.3
+Release:   34%{?gitdate:.%{gitdate}}%{?dist}.4
 URL:       http://www.x.org
 License:   MIT
 
@@ -332,7 +332,12 @@ Patch10141: 0001-dix-Silence-a-compiler-warning-in-doListFontsAndAlia.patch
 Patch10142: 0001-xkb-fix-int-size-mismatch.patch
 # CVE-2026-55999: glamor Font Atlas Heap Buffer Overflow
 Patch10143: CVE-2026-55999.patch
-
+# CVE-2026-88812: Arbitrary code execution via double-free in XKB geometry handling
+Patch10144: CVE-2026-88812.patch
+# CVE-2026-93521: Privilege escalation via crafted RandR provider property requests
+Patch10145: CVE-2026-93521.patch
+# CVE-2026-93523: Out-of-bounds write via unvalidated modifier in ProcXIPassiveUngrabDevice
+Patch10146: CVE-2026-93523.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -743,6 +748,12 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Fri Oct  9 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-34.4
+- CVE fix for: CVE-2026-88812, CVE-2026-93521, CVE-2026-93523
+  Resolves: https://redhat.atlassian.net/browse/RHEL-278161
+  Resolves: https://redhat.atlassian.net/browse/RHEL-278164
+  Resolves: https://redhat.atlassian.net/browse/RHEL-278169
+
 * Fri Jul 10 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-34.3
 - CVE fix for CVE-2026-55999
   Resolves: https://redhat.atlassian.net/browse/RHEL-191493
