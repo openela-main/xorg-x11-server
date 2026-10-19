@@ -42,7 +42,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   34%{?gitdate:.%{gitdate}}%{?dist}.4
+Release:   34%{?gitdate:.%{gitdate}}%{?dist}.5
 URL:       http://www.x.org
 License:   MIT
 
@@ -338,6 +338,16 @@ Patch10144: CVE-2026-88812.patch
 Patch10145: CVE-2026-93521.patch
 # CVE-2026-93523: Out-of-bounds write via unvalidated modifier in ProcXIPassiveUngrabDevice
 Patch10146: CVE-2026-93523.patch
+# CVE-2026-93516: XInput Passive Grab modifierDevice Use-After-Free
+Patch10147: CVE-2026-93516.patch
+# CVE-2026-93517: GLX RenderLarge Heap Buffer Overflow
+Patch10148: CVE-2026-93517.patch
+# CVE-2026-93518: XKB ResizeKeyType Numeric Truncation
+Patch10149: CVE-2026-93518.patch
+# CVE-2026-93519: XFixes Pointer Barrier Event List Buffer Overflow
+Patch10150: CVE-2026-93519.patch
+# CVE-2026-93520: XKB ChangeKeycodeRange Heap Out-of-Bounds Write
+Patch10151: CVE-2026-93520.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -748,6 +758,15 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Tue Oct 13 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-34.5
+- CVE fix for: CVE-2026-93516, CVE-2026-93517, CVE-2026-93518,
+               CVE-2026-93519, CVE-2026-93520
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282169
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282173
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282180
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282184
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282193
+
 * Fri Oct  9 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-34.4
 - CVE fix for: CVE-2026-88812, CVE-2026-93521, CVE-2026-93523
   Resolves: https://redhat.atlassian.net/browse/RHEL-278161
