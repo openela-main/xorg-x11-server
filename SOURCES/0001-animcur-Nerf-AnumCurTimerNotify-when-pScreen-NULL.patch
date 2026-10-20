@@ -1,0 +1,28 @@
+From 2e54bfc16230a77a6dd1083f9263b0dfe8189a6c Mon Sep 17 00:00:00 2001
+From: Adam Jackson <ajax@redhat.com>
+Date: Wed, 17 Jun 2020 15:16:20 -0400
+Subject: [PATCH xserver] animcur: Nerf AnumCurTimerNotify when pScreen == NULL
+
+This is a terrible band-aid, but maybe it works.
+---
+ render/animcur.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/render/animcur.c b/render/animcur.c
+index ef27bda278..44d40c23cd 100644
+--- a/render/animcur.c
++++ b/render/animcur.c
+@@ -131,6 +131,10 @@ AnimCurTimerNotify(OsTimerPtr timer, CARD32 now, void *arg)
+ {
+     DeviceIntPtr dev = arg;
+     ScreenPtr pScreen = dev->spriteInfo->anim.pScreen;
++
++    if (!pScreen)
++        return 0; /* aieee */
++
+     AnimCurScreenPtr as = GetAnimCurScreen(pScreen);
+ 
+     AnimCurPtr ac = GetAnimCur(dev->spriteInfo->sprite->current);
+-- 
+2.23.0
+

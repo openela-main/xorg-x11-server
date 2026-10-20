@@ -46,7 +46,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   28%{?gitdate:.%{gitdate}}%{?dist}.3
+Release:   28%{?gitdate:.%{gitdate}}%{?dist}.4
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X
@@ -297,7 +297,8 @@ Patch10128: 0001-dix-Silence-a-compiler-warning-in-doListFontsAndAlia.patch
 Patch10129: 0001-xkb-fix-int-size-mismatch.patch
 # CVE-2026-55999: glamor Font Atlas Heap Buffer Overflow
 Patch10130: CVE-2026-55999.patch
-
+# https://redhat.atlassian.net/browse/RHEL-261017
+Patch10131: 0001-animcur-Nerf-AnumCurTimerNotify-when-pScreen-NULL.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -726,6 +727,10 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Wed Sep 16 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-28.4
+- Forward-port animated cursor fix from RHEL 7.
+  Resolves: https://redhat.atlassian.net/browse/RHEL-261017
+
 * Thu Jul 09 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-28.3
 - CVE fix for CVE-2026-55999
   Resolves: https://redhat.atlassian.net/browse/RHEL-191504
