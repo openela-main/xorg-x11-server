@@ -46,7 +46,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   28%{?gitdate:.%{gitdate}}%{?dist}.4
+Release:   28%{?gitdate:.%{gitdate}}%{?dist}.5
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X
@@ -299,6 +299,22 @@ Patch10129: 0001-xkb-fix-int-size-mismatch.patch
 Patch10130: CVE-2026-55999.patch
 # https://redhat.atlassian.net/browse/RHEL-261017
 Patch10131: 0001-animcur-Nerf-AnumCurTimerNotify-when-pScreen-NULL.patch
+# CVE-2026-88812: Arbitrary code execution via double-free in XKB geometry handling
+Patch10132: CVE-2026-88812.patch
+# CVE-2026-93516: XInput Passive Grab modifierDevice Use-After-Free
+Patch10133: CVE-2026-93516.patch
+# CVE-2026-93517: GLX RenderLarge Heap Buffer Overflow
+Patch10134: CVE-2026-93517.patch
+# CVE-2026-93518: XKB ResizeKeyType Numeric Truncation
+Patch10135: CVE-2026-93518.patch
+# CVE-2026-93519: XFixes Pointer Barrier Event List Buffer Overflow
+Patch10136: CVE-2026-93519.patch
+# CVE-2026-93520: XKB ChangeKeycodeRange Heap Out-of-Bounds Write
+Patch10137: CVE-2026-93520.patch
+# CVE-2026-93521: Privilege escalation via crafted RandR provider property requests
+Patch10138: CVE-2026-93521.patch
+# CVE-2026-93523: Out-of-bounds write via unvalidated modifier in ProcXIPassiveUngrabDevice
+Patch10139: CVE-2026-93523.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -727,6 +743,19 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Mon Oct 19 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-28.5
+- CVE fix for: CVE-2026-88812, CVE-2026-93516, CVE-2026-93517,
+               CVE-2026-93518, CVE-2026-93519, CVE-2026-93520,
+               CVE-2026-93521, CVE-2026-93523
+  Resolves: https://redhat.atlassian.net/browse/RHEL-278163
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282168
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282195
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282189
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282188
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282178
+  Resolves: https://redhat.atlassian.net/browse/RHEL-278173
+  Resolves: https://redhat.atlassian.net/browse/RHEL-278167
+
 * Wed Sep 16 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-28.4
 - Forward-port animated cursor fix from RHEL 7.
   Resolves: https://redhat.atlassian.net/browse/RHEL-261017
