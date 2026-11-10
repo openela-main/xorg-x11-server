@@ -42,7 +42,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   34%{?gitdate:.%{gitdate}}%{?dist}.5
+Release:   38%{?gitdate:.%{gitdate}}%{?dist}
 URL:       http://www.x.org
 License:   MIT
 
@@ -126,6 +126,8 @@ Patch115: 0001-xquartz-Remove-invalid-Unicode-sequence.patch
 Patch116: 0001-dix-Force-update-LEDs-after-device-state-update-in-E.patch
 # https://issues.redhat.com/browse/RHEL-84253
 Patch117: 0001-xfree86-Fix-potentially-NULL-reference-to-platform-d.patch
+# https://redhat.atlassian.net/browse/RHEL-169728
+Patch118: 0001-dri2-Protect-against-dri2ClientPrivate-assertion-fai.patch
 
 # CVE-2021-4011
 Patch10009: 0001-record-Fix-out-of-bounds-access-in-SwapCreateRegiste.patch
@@ -332,22 +334,6 @@ Patch10141: 0001-dix-Silence-a-compiler-warning-in-doListFontsAndAlia.patch
 Patch10142: 0001-xkb-fix-int-size-mismatch.patch
 # CVE-2026-55999: glamor Font Atlas Heap Buffer Overflow
 Patch10143: CVE-2026-55999.patch
-# CVE-2026-88812: Arbitrary code execution via double-free in XKB geometry handling
-Patch10144: CVE-2026-88812.patch
-# CVE-2026-93521: Privilege escalation via crafted RandR provider property requests
-Patch10145: CVE-2026-93521.patch
-# CVE-2026-93523: Out-of-bounds write via unvalidated modifier in ProcXIPassiveUngrabDevice
-Patch10146: CVE-2026-93523.patch
-# CVE-2026-93516: XInput Passive Grab modifierDevice Use-After-Free
-Patch10147: CVE-2026-93516.patch
-# CVE-2026-93517: GLX RenderLarge Heap Buffer Overflow
-Patch10148: CVE-2026-93517.patch
-# CVE-2026-93518: XKB ResizeKeyType Numeric Truncation
-Patch10149: CVE-2026-93518.patch
-# CVE-2026-93519: XFixes Pointer Barrier Event List Buffer Overflow
-Patch10150: CVE-2026-93519.patch
-# CVE-2026-93520: XKB ChangeKeycodeRange Heap Out-of-Bounds Write
-Patch10151: CVE-2026-93520.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -758,41 +744,30 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
-* Tue Oct 13 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-34.5
-- CVE fix for: CVE-2026-93516, CVE-2026-93517, CVE-2026-93518,
-               CVE-2026-93519, CVE-2026-93520
-  Resolves: https://redhat.atlassian.net/browse/RHEL-282169
-  Resolves: https://redhat.atlassian.net/browse/RHEL-282173
-  Resolves: https://redhat.atlassian.net/browse/RHEL-282180
-  Resolves: https://redhat.atlassian.net/browse/RHEL-282184
-  Resolves: https://redhat.atlassian.net/browse/RHEL-282193
-
-* Fri Oct  9 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-34.4
-- CVE fix for: CVE-2026-88812, CVE-2026-93521, CVE-2026-93523
-  Resolves: https://redhat.atlassian.net/browse/RHEL-278161
-  Resolves: https://redhat.atlassian.net/browse/RHEL-278164
-  Resolves: https://redhat.atlassian.net/browse/RHEL-278169
-
-* Fri Jul 10 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-34.3
+* Tue Jul 28 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-38
 - CVE fix for CVE-2026-55999
-  Resolves: https://redhat.atlassian.net/browse/RHEL-191493
+  Resolves: https://redhat.atlassian.net/browse/RHEL-191502
 
-* Fri Jun 12 2026  Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-34.2
+* Fri Jun 12 2026  Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-37
 - Other security related fixes
-  Resolves: https://redhat.atlassian.net/browse/RHEL-184288
+  Resolves: https://redhat.atlassian.net/browse/RHEL-183891
 
-* Wed Jun 10 2026  Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-34.1
+* Wed Jun 10 2026  Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-36
 - CVE fix for: CVE-2026-50256, CVE-2026-50257, CVE-2026-50258,
                CVE-2026-50259, CVE-2026-50260, CVE-2026-50261,
                CVE-2026-50262, CVE-2026-50263, CVE-2026-50264
-  Resolves: https://redhat.atlassian.net/browse/RHEL-182435
+  Resolves: https://redhat.atlassian.net/browse/RHEL-182428
+
+* Tue May 19 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-35
+- dri2: Protect against dri2ClientPrivate assertion failures
+  Resolves: https://redhat.atlassian.net/browse/RHEL-169728
 
 * Tue Apr 14 2026 Olivier Fourdan <ofourdan@redhat.com> - 1.20.11-34
 - CVE fix for: CVE-2026-33999, CVE-2026-34000, CVE-2026-34001
                CVE-2026-34002, CVE-2026-34003
-  Resolves: https://redhat.atlassian.net/browse/RHEL-163226
-  Resolves: https://redhat.atlassian.net/browse/RHEL-163308
-  Resolves: https://redhat.atlassian.net/browse/RHEL-163239
+  Resolves: https://redhat.atlassian.net/browse/RHEL-163227
+  Resolves: https://redhat.atlassian.net/browse/RHEL-163309
+  Resolves: https://redhat.atlassian.net/browse/RHEL-163240
 
 * Wed Jan 14 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-33
 - Rebuild against xorg-x11-xtrans-devel 1.4.0-9
