@@ -42,7 +42,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   38%{?gitdate:.%{gitdate}}%{?dist}
+Release:   39%{?gitdate:.%{gitdate}}%{?dist}
 URL:       http://www.x.org
 License:   MIT
 
@@ -334,6 +334,22 @@ Patch10141: 0001-dix-Silence-a-compiler-warning-in-doListFontsAndAlia.patch
 Patch10142: 0001-xkb-fix-int-size-mismatch.patch
 # CVE-2026-55999: glamor Font Atlas Heap Buffer Overflow
 Patch10143: CVE-2026-55999.patch
+# CVE-2026-88812: Arbitrary code execution via double-free in XKB geometry handling
+Patch10144: CVE-2026-88812.patch
+# CVE-2026-93516: XInput Passive Grab modifierDevice Use-After-Free
+Patch10145: CVE-2026-93516.patch
+# CVE-2026-93517: GLX RenderLarge Heap Buffer Overflow
+Patch10146: CVE-2026-93517.patch
+# CVE-2026-93518: XKB ResizeKeyType Numeric Truncation
+Patch10147: CVE-2026-93518.patch
+# CVE-2026-93519: XFixes Pointer Barrier Event List Buffer Overflow
+Patch10148: CVE-2026-93519.patch
+# CVE-2026-93520: XKB ChangeKeycodeRange Heap Out-of-Bounds Write
+Patch10159: CVE-2026-93520.patch
+# CVE-2026-93521: Privilege escalation via crafted RandR provider property requests
+Patch10150: CVE-2026-93521.patch
+# CVE-2026-93523: Out-of-bounds write via unvalidated modifier in ProcXIPassiveUngrabDevice
+Patch10151: CVE-2026-93523.patch
 
 BuildRequires: make
 BuildRequires: systemtap-sdt-devel
@@ -744,6 +760,19 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Mon Oct 19 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-39
+- CVE fix for: CVE-2026-88812, CVE-2026-93516, CVE-2026-93517,
+               CVE-2026-93518, CVE-2026-93519, CVE-2026-93520,
+               CVE-2026-93521, CVE-2026-93523
+  Resolves: https://redhat.atlassian.net/browse/RHEL-278176
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282171
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282194
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282175
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282182
+  Resolves: https://redhat.atlassian.net/browse/RHEL-282176
+  Resolves: https://redhat.atlassian.net/browse/RHEL-278160
+  Resolves: https://redhat.atlassian.net/browse/RHEL-278177
+
 * Tue Jul 28 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-38
 - CVE fix for CVE-2026-55999
   Resolves: https://redhat.atlassian.net/browse/RHEL-191502
