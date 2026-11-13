@@ -46,7 +46,7 @@
 Summary:   X.Org X11 X server
 Name:      xorg-x11-server
 Version:   1.20.11
-Release:   28%{?gitdate:.%{gitdate}}%{?dist}.5
+Release:   28%{?gitdate:.%{gitdate}}%{?dist}.6
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X
@@ -743,6 +743,10 @@ find %{inst_srcdir}/hw/xfree86 -name \*.c -delete
 
 
 %changelog
+* Thu Nov 12 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-28.6
+- Fix-up for CVE-2026-93520
+  Resolves: https://redhat.atlassian.net/browse/RHEL-299890
+
 * Mon Oct 19 2026 Michel Dänzer  <mdaenzer@redhat.com> - 1.20.11-28.5
 - CVE fix for: CVE-2026-88812, CVE-2026-93516, CVE-2026-93517,
                CVE-2026-93518, CVE-2026-93519, CVE-2026-93520,
